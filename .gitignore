@@ -94,3 +94,6 @@ secrets.json
 # User-specific config
 config.local.py
 settings.local.py
+
+# Internal planning documents (not for public repo)
+PRPs/
