@@ -20,6 +20,7 @@ from .core.risk_manager import (
 from .database.supabase_client import SupabaseClient
 from .mcp_clients.alpaca_client import AlpacaMCPClient
 from .models.trade import Trade
+from .risk.position_sizer import initialize_position_sizer
 from .strategies.defensive_core import calculate_rebalancing_orders, should_rebalance
 from .strategies.defensive_core import calculate_rebalancing_orders, should_rebalance
 from .strategies.momentum_trading import check_exit_conditions, scan_for_signals
@@ -84,6 +85,9 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
         supabase = await SupabaseClient.get_instance()
         ml_logger = get_ml_logger()
         news_strategy = NewsStrategy()
+
+        # Initialize position sizer with historical data
+        await initialize_position_sizer(supabase)
 
         # 1. Get portfolio state
         logger.info("Fetching portfolio state...")

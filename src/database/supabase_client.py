@@ -356,10 +356,20 @@ class SupabaseClient:
             # Convert TradeFeatures to dict
             data_dict["features"] = data_dict["features"]
 
-        # Convert Decimal to string
+        # Convert Decimal to float recursively (including nested dicts)
+        def convert_decimals(obj):
+            """Recursively convert Decimal to float in nested structures."""
+            if isinstance(obj, Decimal):
+                return float(obj)
+            elif isinstance(obj, dict):
+                return {k: convert_decimals(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_decimals(item) for item in obj]
+            else:
+                return obj
+
         for key, value in data_dict.items():
-            if isinstance(value, Decimal):
-                data_dict[key] = str(value)
+            data_dict[key] = convert_decimals(value)
 
         try:
             response = await client.table("ml_training_data").insert(data_dict).execute()

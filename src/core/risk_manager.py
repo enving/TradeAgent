@@ -9,6 +9,7 @@ from decimal import Decimal
 from ..models.portfolio import Portfolio, Position
 from ..models.trade import Signal
 from ..risk.correlation_monitor import get_correlation_monitor
+from ..risk.position_sizer import get_position_sizer
 from ..utils.logger import logger
 
 # CRITICAL: Hard-coded risk limits (no LLM decisions)
@@ -40,7 +41,7 @@ async def filter_signals_by_risk(
     """
     # Count momentum positions (exclude defensive core: VTI, VGK, GLD)
     defensive_symbols = {"VTI", "VGK", "GLD"}
-    momentum_positions = [p for p in current_positions if p.ticker not in defensive_symbols]
+    momentum_positions = [p for p in current_positions if p.symbol not in defensive_symbols]
 
     # Check position limit
     if len(momentum_positions) >= MAX_POSITIONS:
@@ -126,21 +127,14 @@ def calculate_position_size(signal: Signal, portfolio: Portfolio) -> Decimal:
 
         return shares
 
-    # For momentum trading: use 10% max position size
-    max_position_value = portfolio.portfolio_value * MAX_POSITION_SIZE_PCT
+    # For momentum/news strategies: use dynamic Kelly sizing
+    position_sizer = get_position_sizer()
+    shares, reasoning = position_sizer.calculate_quantity(signal, portfolio)
 
-    # Check buying power
-    available_cash = min(portfolio.buying_power, max_position_value)
-
-    # Calculate shares (rounded down to avoid exceeding buying power)
-    shares = available_cash / signal.entry_price
-    shares = shares.quantize(Decimal("0.01"))  # Round to 2 decimal places
-
-    logger.debug(
-        f"Position sizing for {signal.ticker}: "
-        f"max_value=${max_position_value:.2f}, "
-        f"entry_price=${signal.entry_price:.2f}, "
-        f"shares={shares}"
+    logger.info(
+        f"Dynamic position sizing for {signal.ticker}: "
+        f"{shares} shares @ ${signal.entry_price:.2f} "
+        f"({reasoning})"
     )
 
     return shares

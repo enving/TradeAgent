@@ -165,9 +165,15 @@ class AlpacaMCPClient:
             order_side = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
 
             # Build market order request
+            # Note: Bracket orders require whole share quantities
+            quantity = float(qty)
+            if stop_loss or take_profit:
+                # Round to whole shares for bracket orders
+                quantity = int(round(quantity))
+
             order_data = MarketOrderRequest(
                 symbol=symbol,
-                qty=float(qty),
+                qty=quantity,
                 side=order_side,
                 time_in_force=TimeInForce.DAY,
             )
@@ -176,9 +182,11 @@ class AlpacaMCPClient:
             if stop_loss or take_profit:
                 order_data.order_class = OrderClass.BRACKET
                 if stop_loss:
-                    order_data.stop_loss = {"stop_price": float(stop_loss)}
+                    # Round to 2 decimal places (Alpaca requirement)
+                    order_data.stop_loss = {"stop_price": round(float(stop_loss), 2)}
                 if take_profit:
-                    order_data.take_profit = {"limit_price": float(take_profit)}
+                    # Round to 2 decimal places (Alpaca requirement)
+                    order_data.take_profit = {"limit_price": round(float(take_profit), 2)}
 
             logger.info(
                 f"Submitting order: {side.upper()} {qty} {symbol} "

@@ -232,8 +232,21 @@ class CorrelationMonitor:
         if ticker in self._price_cache:
             cached = self._price_cache[ticker]
             # Check if cache is fresh (less than 1 day old)
-            if len(cached) > 0 and (datetime.now() - cached.index[-1]).days < 1:
-                return cached["Close"]
+            if len(cached) > 0:
+                # Make datetime timezone-aware for comparison
+                last_cached_date = cached.index[-1]
+
+                # Handle timezone conversion
+                if last_cached_date.tzinfo is None:
+                    # Timestamp is timezone-naive, add UTC
+                    last_cached_date = last_cached_date.replace(tzinfo=timezone.utc)
+                else:
+                    # Timestamp is timezone-aware, convert to UTC
+                    last_cached_date = last_cached_date.astimezone(timezone.utc)
+
+                time_since_update = datetime.now(timezone.utc) - last_cached_date
+                if time_since_update.days < 1:
+                    return cached["Close"]
 
         try:
             # Fetch from yfinance
