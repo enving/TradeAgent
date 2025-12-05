@@ -96,6 +96,44 @@ python3 test_integration.py
 
 ---
 
+## 🐳 Docker Deployment (Recommended for Production)
+
+**Run the bot autonomously with automated scheduling!**
+
+### Quick Start
+
+\`\`\`bash
+# 1. Build Docker image
+./run_docker.sh build
+
+# 2. Test run once
+./run_docker.sh once
+
+# 3. Start daily scheduler (runs at 9:35 AM ET on weekdays)
+./run_docker.sh schedule
+
+# 4. Monitor logs
+./run_docker.sh logs
+
+# 5. Stop scheduler
+./run_docker.sh stop
+\`\`\`
+
+### What You Get
+
+- ✅ **Autonomous operation** - Runs daily at 9:35 AM ET automatically
+- ✅ **Isolated environment** - No dependency conflicts
+- ✅ **Auto-restart** - Recovers from failures automatically
+- ✅ **Cross-platform** - Works on Linux, macOS, Windows
+- ✅ **Easy updates** - \`git pull && ./run_docker.sh build\`
+
+### Alternative Deployment Options
+
+For native Linux deployment or cron-based scheduling, see detailed guide:
+- **[deployment/README.md](deployment/README.md)** - Full deployment guide with SystemD and Cron options
+
+---
+
 ## 📖 Usage
 
 ### Run Daily Trading Loop
