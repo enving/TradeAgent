@@ -1,0 +1,571 @@
+{
+  "name": "Stock & ETF Trading with Alpaca",
+  "description": "Automated stock & ETF trading workflow with technical analysis, market signals, and risk management via Alpaca API",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-2048, 432],
+      "id": "trigger-manual",
+      "name": "Execute Workflow (Manual)"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-2048, 624],
+      "id": "trigger-schedule",
+      "name": "Market Open Daily (09:30 UTC)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "alpaca_api_key",
+              "name": "alpaca_api_key",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "alpaca_secret_key",
+              "name": "alpaca_secret_key",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "trading_symbols",
+              "name": "trading_symbols",
+              "value": "AAPL,SPY,QQQ,TSLA,IVV",
+              "type": "string"
+            },
+            {
+              "id": "position_size_pct",
+              "name": "position_size_pct",
+              "value": "0.03",
+              "type": "string"
+            },
+            {
+              "id": "min_confidence",
+              "name": "min_confidence",
+              "value": "70",
+              "type": "string"
+            },
+            {
+              "id": "trading_enabled",
+              "name": "trading_enabled",
+              "value": "false",
+              "type": "string"
+            },
+            {
+              "id": "paper_trading",
+              "name": "paper_trading",
+              "value": "true",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-1696, 432],
+      "id": "config-setup",
+      "name": "Configuration Setup"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/account",
+        "method": "GET",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1184, 320],
+      "id": "alpaca-account-info",
+      "name": "Get Account Info"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/positions",
+        "method": "GET",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1184, 480],
+      "id": "alpaca-get-positions",
+      "name": "Get Open Positions"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/quotes?symbols={{ $node[\"config-setup\"].json[\"trading_symbols\"] }}",
+        "method": "GET",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1184, 640],
+      "id": "alpaca-get-quotes",
+      "name": "Get Live Quotes"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/bars?symbols={{ $node[\"config-setup\"].json[\"trading_symbols\"] }}&timeframe=1D&limit=50",
+        "method": "GET",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1184, 800],
+      "id": "alpaca-get-bars",
+      "name": "Get Historical Bars (50D)"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/clock",
+        "method": "GET",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1184, 960],
+      "id": "alpaca-market-clock",
+      "name": "Check Market Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Technical Indicators Calculator\n// Berechne SMA, RSI, MACD für alle Symbole\n\nconst bars = $input.json;\nconst indicators = {};\n\nfunction calculateSMA(prices, period) {\n  if (prices.length < period) return null;\n  const sum = prices.slice(-period).reduce((a, b) => a + b, 0);\n  return sum / period;\n}\n\nfunction calculateRSI(prices, period = 14) {\n  if (prices.length < period + 1) return null;\n  \n  let gains = 0, losses = 0;\n  for (let i = prices.length - period; i < prices.length; i++) {\n    const change = prices[i] - prices[i - 1];\n    if (change > 0) gains += change;\n    else losses -= change;\n  }\n  \n  const avgGain = gains / period;\n  const avgLoss = losses / period;\n  const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;\n  return 100 - (100 / (1 + rs));\n}\n\nfunction calculateATR(highs, lows, closes, period = 14) {\n  if (highs.length < period) return null;\n  \n  let trueRanges = [];\n  for (let i = 1; i < highs.length; i++) {\n    const tr = Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - closes[i - 1]),\n      Math.abs(lows[i] - closes[i - 1])\n    );\n    trueRanges.push(tr);\n  }\n  \n  const atr = trueRanges.slice(-period).reduce((a, b) => a + b, 0) / period;\n  return atr;\n}\n\n// Process each symbol\nfor (const [symbol, barData] of Object.entries(bars.bars || {})) {\n  if (!barData || !Array.isArray(barData)) continue;\n  \n  const closes = barData.map(b => b.c);\n  const highs = barData.map(b => b.h);\n  const lows = barData.map(b => b.l);\n  const volumes = barData.map(b => b.v);\n  \n  const currentPrice = closes[closes.length - 1];\n  const prevClose = closes[closes.length - 2];\n  \n  indicators[symbol] = {\n    symbol: symbol,\n    current_price: currentPrice,\n    prev_close: prevClose,\n    change_pct: ((currentPrice - prevClose) / prevClose * 100).toFixed(2),\n    sma_20: (calculateSMA(closes, 20) || 0).toFixed(2),\n    sma_50: (calculateSMA(closes, 50) || 0).toFixed(2),\n    sma_200: (calculateSMA(closes, 200) || 0).toFixed(2),\n    rsi_14: (calculateRSI(closes, 14) || 0).toFixed(2),\n    atr_14: (calculateATR(highs, lows, closes, 14) || 0).toFixed(2),\n    volume_current: volumes[volumes.length - 1],\n    volume_avg_20: (volumes.slice(-20).reduce((a, b) => a + b, 0) / 20).toFixed(0)\n  };\n}\n\nreturn [{\n  json: {\n    indicators: indicators,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 640],
+      "id": "calc-indicators",
+      "name": "Calculate Technical Indicators"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Risk Management Calculator\n// Position Size, Stop-Loss, Take-Profit Levels\n\nconst account = $node[\"alpaca-account-info\"].json;\nconst indicators = $input.json.indicators;\nconst config = $node[\"config-setup\"].json;\nconst positions = $node[\"alpaca-get-positions\"].json;\n\nconst portfolio = {\n  total_cash: parseFloat(account.cash) || 0,\n  buying_power: parseFloat(account.buying_power) || 0,\n  total_portfolio_value: parseFloat(account.portfolio_value) || 0,\n  current_positions: positions.length || 0\n};\n\nconst riskAnalysis = {};\nconst positionSizePct = parseFloat(config.position_size_pct) || 0.03;\nconst maxPositionSize = portfolio.total_portfolio_value * positionSizePct;\n\nfor (const [symbol, ind] of Object.entries(indicators)) {\n  const currentPrice = parseFloat(ind.current_price);\n  const atr = parseFloat(ind.atr_14) || currentPrice * 0.02;\n  const rsi = parseFloat(ind.rsi_14);\n  \n  // Risk/Reward Setup\n  const stopLossDistance = atr * 1.5; // 1.5x ATR below entry\n  const takeProfitDistance = stopLossDistance * 2; // 2:1 Risk/Reward\n  \n  const entryPrice = currentPrice;\n  const stopLoss = (entryPrice - stopLossDistance).toFixed(2);\n  const takeProfit = (entryPrice + takeProfitDistance).toFixed(2);\n  \n  // Position Size Calculation\n  const sharesForMaxRisk = Math.floor(maxPositionSize / currentPrice);\n  \n  riskAnalysis[symbol] = {\n    symbol: symbol,\n    current_price: currentPrice.toFixed(2),\n    entry_price: entryPrice.toFixed(2),\n    stop_loss: stopLoss,\n    take_profit: takeProfit,\n    risk_per_share: stopLossDistance.toFixed(2),\n    reward_per_share: takeProfitDistance.toFixed(2),\n    suggested_shares: sharesForMaxRisk,\n    position_value: (sharesForMaxRisk * currentPrice).toFixed(2),\n    rsi: rsi.toFixed(0),\n    rsi_signal: rsi < 30 ? 'oversold' : rsi > 70 ? 'overbought' : 'neutral'\n  };\n}\n\nreturn [{\n  json: {\n    portfolio: portfolio,\n    risk_analysis: riskAnalysis,\n    available_for_trading: portfolio.buying_power,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 800],
+      "id": "calc-risk",
+      "name": "Calculate Risk Management"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [-848, 640],
+      "id": "merge-data",
+      "name": "Merge Data for Analysis"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4o"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a quantitative stock market analyst. Your job is to analyze stock and ETF data and generate trading signals.\n\nInput Data:\n{{ JSON.stringify($input.json, null, 2) }}\n\nAnalyze each symbol and provide:\n1. **Technical Signal**: BUY / HOLD / SELL based on:\n   - RSI (< 30 = oversold/buy signal, > 70 = overbought/sell signal)\n   - SMA Alignment (price vs 20/50/200 moving averages)\n   - Price Trend\n   - Volume\n\n2. **Confidence Score**: 0-100\n   - 90+: Strong signal, clear trend, RSI extreme\n   - 70-89: Good signal, aligned indicators\n   - 50-69: Weak signal, mixed indicators\n   - < 50: Inconclusive\n\n3. **Setup Quality**: Describe the trading setup (e.g., \"Price oversold at support with bullish divergence\")\n\n4. **Risk/Reward**: Mention the R:R ratio\n\n5. **Market Context**: Brief note on broader market regime\n\nOutput Format (JSON):\n{\n  \"signals\": {\n    \"SYMBOL\": {\n      \"signal\": \"BUY/HOLD/SELL\",\n      \"confidence\": 75,\n      \"entry_setup\": \"...\",\n      \"risk_reward_ratio\": \"2:1\",\n      \"reasoning\": \"...\"\n    }\n  },\n  \"market_regime\": \"bullish/neutral/bearish\",\n  \"overall_bias\": \"bullish/neutral/bearish\"\n}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [-96, 640],
+      "id": "llm-signal-generation",
+      "name": "LLM Signal Generation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Trade Signal Validator & Order Builder\nconst signals = $input.json.signals.signals;\nconst riskData = $node[\"calc-risk\"].json.risk_analysis;\nconst config = $node[\"config-setup\"].json;\nconst minConfidence = parseInt(config.min_confidence) || 70;\nconst tradingEnabled = config.trading_enabled === 'true';\nconst paperTrading = config.paper_trading === 'true';\n\nconst validOrders = [];\nconst rejectedSignals = [];\n\nfor (const [symbol, signal] of Object.entries(signals)) {\n  const risk = riskData[symbol];\n  \n  // Validate signal\n  if (!signal.signal || !signal.confidence) {\n    rejectedSignals.push({\n      symbol: symbol,\n      reason: 'Missing signal data'\n    });\n    continue;\n  }\n  \n  const confidence = parseInt(signal.confidence);\n  \n  if (confidence < minConfidence) {\n    rejectedSignals.push({\n      symbol: symbol,\n      signal: signal.signal,\n      confidence: confidence,\n      reason: `Confidence ${confidence} below minimum ${minConfidence}`\n    });\n    continue;\n  }\n  \n  // Build order if signal is BUY and confidence passes\n  if (signal.signal === 'BUY' && confidence >= minConfidence) {\n    validOrders.push({\n      symbol: symbol,\n      side: 'buy',\n      qty: parseInt(risk.suggested_shares) || 1,\n      type: 'limit',\n      limit_price: parseFloat(risk.current_price),\n      stop_price: parseFloat(risk.stop_loss),\n      take_profit_price: parseFloat(risk.take_profit),\n      confidence: confidence,\n      setup: signal.entry_setup,\n      time_in_force: 'day',\n      should_execute: tradingEnabled && confidence >= 75\n    });\n  }\n  // SELL signal processing\n  else if (signal.signal === 'SELL' && confidence >= minConfidence) {\n    validOrders.push({\n      symbol: symbol,\n      side: 'sell',\n      type: 'market',\n      confidence: confidence,\n      setup: signal.entry_setup,\n      time_in_force: 'day',\n      should_execute: tradingEnabled && confidence >= 75\n    });\n  }\n}\n\nreturn [{\n  json: {\n    valid_orders: validOrders,\n    rejected_signals: rejectedSignals,\n    paper_trading: paperTrading,\n    trading_enabled: tradingEnabled,\n    total_valid_signals: validOrders.length,\n    total_rejected: rejectedSignals.length,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [208, 640],
+      "id": "validate-signals",
+      "name": "Validate Signals & Build Orders"
+    },
+    {
+      "parameters": {
+        "type": "object",
+        "key": "should_execute",
+        "value": true
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [496, 640],
+      "id": "filter-executable",
+      "name": "Filter Executable Orders"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $node[\"config-setup\"].json[\"paper_trading\"] === 'true' ? 'paper-api' : 'api' }}.alpaca.markets/v2/orders",
+        "method": "POST",
+        "authentication": "generic",
+        "genericAuthType": "httpBasicAuth",
+        "genericAuthHttpBasicAuth": {
+          "user": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}",
+          "password": "={{ $node[\"config-setup\"].json[\"alpaca_secret_key\"] }}"
+        },
+        "sendHeaders": true,
+        "headers": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "={{ $node[\"config-setup\"].json[\"alpaca_api_key\"] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "body": {
+          "raw": "{\n  \"symbol\": \"{{ $input.json.symbol }}\",\n  \"qty\": {{ $input.json.qty || 1 }},\n  \"side\": \"{{ $input.json.side }}\",\n  \"type\": \"{{ $input.json.type }}\",\n  \"time_in_force\": \"{{ $input.json.time_in_force }}\",\n  \"limit_price\": {{ $input.json.limit_price || null }},\n  \"order_class\": \"bracket\",\n  \"take_profit\": {\n    \"limit_price\": {{ $input.json.take_profit_price || null }}\n  },\n  \"stop_loss\": {\n    \"stop_price\": {{ $input.json.stop_price || null }}\n  }\n}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [784, 640],
+      "id": "execute-order",
+      "name": "Execute Order (Alpaca)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Order Result Handler & Logger\nconst order = $input.json;\nconst symbol = order.symbol;\nconst orderId = order.id;\n\nconst result = {\n  execution_status: order.id ? 'SUCCESS' : 'FAILED',\n  order_id: orderId,\n  symbol: symbol,\n  side: order.side,\n  qty: order.qty,\n  filled_qty: order.filled_qty || 0,\n  filled_avg_price: order.filled_avg_price || null,\n  limit_price: order.limit_price,\n  status: order.status,\n  created_at: order.created_at,\n  updated_at: order.updated_at,\n  message: orderId ? `Order ${orderId} submitted for ${symbol}` : 'Order placement failed'\n};\n\nreturn [{\n  json: result\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1072, 640],
+      "id": "handle-order-result",
+      "name": "Handle Order Result"
+    },
+    {
+      "parameters": {
+        "content": "## Stock & ETF Trading Workflow\n\n**Macro Context**: Macro indicators + Market Sentiment\n\n**Data Layer**: Quotes, Bars (OHLCV), Account Info\n\n**Analysis**: Technical Indicators (SMA, RSI, ATR)\n\n**Signal Generation**: LLM-based with Confidence Score\n\n**Risk Management**: Position Sizing, Stop-Loss, Take-Profit\n\n**Execution**: Alpaca API Orders (Paper/Live)\n\n**Monitoring**: Order Status, Position Tracking\n\n---\n\n### Setup Instructions:\n1. Add your **Alpaca API Key** and **Secret Key** in Configuration Setup node\n2. Set **paper_trading = true** for testing\n3. Set **trading_enabled = false** initially (dry-run mode)\n4. Adjust **min_confidence** threshold (default: 70)\n5. List symbols in **trading_symbols** (comma-separated)\n6. Test with Manual Trigger first, then enable Schedule\n\n### Safety First:\n✅ Start with Paper Trading\n✅ Small position sizes\n✅ Kill-switch implemented\n✅ All trades logged",
+        "height": 400,
+        "width": 800,
+        "color": 1
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-2048, -192],
+      "typeVersion": 1,
+      "id": "instruction-note",
+      "name": "README"
+    },
+    {
+      "parameters": {
+        "content": "## Emergency Stop\n\nIf anything goes wrong, toggle **trading_enabled = false** in Configuration Setup.\n\nAll orders will be validated but NOT executed.",
+        "height": 200,
+        "width": 400,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1072, 400],
+      "typeVersion": 1,
+      "id": "emergency-stop-note",
+      "name": "Emergency Stop Note"
+    }
+  ],
+  "connections": {
+    "trigger-manual": {
+      "main": [
+        [
+          {
+            "node": "config-setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "trigger-schedule": {
+      "main": [
+        [
+          {
+            "node": "config-setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "config-setup": {
+      "main": [
+        [
+          {
+            "node": "alpaca-account-info",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "alpaca-get-positions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "alpaca-get-quotes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "alpaca-get-bars",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "alpaca-market-clock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alpaca-account-info": {
+      "main": [
+        [
+          {
+            "node": "merge-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alpaca-get-positions": {
+      "main": [
+        [
+          {
+            "node": "merge-data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "alpaca-get-quotes": {
+      "main": [
+        [
+          {
+            "node": "merge-data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "alpaca-get-bars": {
+      "main": [
+        [
+          {
+            "node": "calc-indicators",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "alpaca-market-clock": {
+      "main": [
+        [
+          {
+            "node": "merge-data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "calc-indicators": {
+      "main": [
+        [
+          {
+            "node": "merge-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge-data": {
+      "main": [
+        [
+          {
+            "node": "calc-risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calc-risk": {
+      "main": [
+        [
+          {
+            "node": "llm-signal-generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "llm-signal-generation": {
+      "main": [
+        [
+          {
+            "node": "validate-signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validate-signals": {
+      "main": [
+        [
+          {
+            "node": "filter-executable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter-executable": {
+      "main": [
+        [
+          {
+            "node": "execute-order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "execute-order": {
+      "main": [
+        [
+          {
+            "node": "handle-order-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "stocks"
+    },
+    {
+      "name": "trading"
+    },
+    {
+      "name": "alpaca"
+    },
+    {
+      "name": "ai-analysis"
+    }
+  ]
+}

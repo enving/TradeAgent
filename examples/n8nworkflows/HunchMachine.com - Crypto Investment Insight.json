@@ -1,0 +1,1421 @@
+{
+  "name": "HunchMachine.com - Crypto Investment Insight",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Macro Context \n",
+        "height": 1360,
+        "width": 1120
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1296,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "952ec42c-f28b-4217-a66d-2e1e5fafd25a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "numberInputs": 8
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -848,
+        320
+      ],
+      "id": "0f5608df-ac02-477b-9fec-228a67440c48",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "## Micro Context\n",
+        "height": 1360,
+        "width": 1200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1408,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "e05df976-324b-4868-9a37-b57fc145f4ac",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "numberInputs": 7
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2736,
+        352
+      ],
+      "id": "1bb11ec5-c6e6-421f-ba64-c67f23722c42",
+      "name": "Merge5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    data: items.map(i => i.json)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        432
+      ],
+      "id": "b60f151b-48e2-4319-b5d6-a0bcb4321fcd",
+      "name": "Clean Merge3"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 1,
+              "triggerAtMinute": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2048,
+        624
+      ],
+      "id": "0e81013c-6375-46af-8075-7c8208457b67",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=treasury_yield&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        -32
+      ],
+      "id": "f5b5587b-0c53-4160-a765-e2723c05e2f8",
+      "name": "treasury_yield"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=fed_funds_rate&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        112
+      ],
+      "id": "4a239a34-8100-4bda-88f5-368c4d6b9d32",
+      "name": "fed_funds_rate"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=macro_news_summary&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        256
+      ],
+      "id": "53f45cb0-50ba-4d0a-999e-bd1e7f81274d",
+      "name": "macro_news_summary"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_overview&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        400
+      ],
+      "id": "4949e5af-20f0-49f9-b1a0-3a9e8887ef83",
+      "name": "btc_overview"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=gold_price_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        688
+      ],
+      "id": "93c0adc7-2a9a-4403-8b5e-cad6e447a3dc",
+      "name": "gold_price_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=m2_money_supply&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        832
+      ],
+      "id": "3b819018-1144-4d78-bf3c-de0499125319",
+      "name": "m2_money_supply"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2048,
+        432
+      ],
+      "id": "882a911b-d3ca-48bd-8086-a7daa0efbf85",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=dxy_proxy&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        544
+      ],
+      "id": "c6e48c91-316b-440e-b68e-de6183c7a74a",
+      "name": "dxy_proxy"
+    },
+    {
+      "parameters": {
+        "content": "## Plug & Play Api Key\n\nFor the best results — and to instantly unlock all indicators — connect your hunchmachine.com API key here (paste it in the field \"value\").\n\nHunch Machine delivers cycle-aware market indicators and digested insights designed for seamless integration with agents, dashboards, and automations powered by LLMs.\n\nLearn more and get your API key at\nhunchmachine.com/api",
+        "height": 624,
+        "width": 384,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1824,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "bb438350-1df1-401c-ac5a-81c4c6992318",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a macro strategist for crypto.\n\nGoal: Produce a precise, compact macro brief + 2 short bullets on what this macro “wind” implies for BTC/ETH. This is a signal filter, not a trade call.\n\nInput JSON:\n{{ JSON.stringify($json, null, 2) }}\n\nRules:\n- Use ONLY numbers/fields present in the JSON; if a value is missing, write \"not provided\".\n- Prioritize numeric fields; IGNORE any long narrative strings under keys like \"message\", \"content\", \"summary\" unless they contain unique numeric facts.\n- Always assess: \n  • 10Y Treasury (current; biggest % move among 30/90/180d and its direction)  \n  • Fed Funds (current; 3m and 6m change)  \n  • M2 (YoY; and whether 3m vs 6m shows acceleration or deceleration)  \n  • USD via dxy_proxy (if absent: \"USD: not provided\")  \n  • Gold (7d/30d/90d % changes)  \n  • WTI (latest; 7d and 30d % changes)\n- Call out any regime conflict (e.g., short rates ↑ while long yields ↓).\n- Round: rates to 2 decimals; % moves to 1 decimal. Plain language, no equations, no ticker spam.\n- Keep macro focus; do NOT give specific trade entries/targets/stops.\n- Max 220 words total.\n\nOutput EXACTLY this structure (no extra text/markdown):\n\ntitle: \"Macro Market Analysis\"\nmacroBrief:\n1) Rates & liquidity: [...]\n2) USD, Gold, Oil: [...]\n3) Risk tone: [...]\nriskAssetsCrypto:\n- BTC: [...]\n- ETH: [...]\nmacroBias: [\"risk-on\",\"risk-off\",\"mixed\"]\nhorizon: [\"days\",\"weeks\",\"months\"]\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -496,
+        416
+      ],
+      "id": "a915e22a-4147-4193-8356-aaa0c1a637bf",
+      "name": "Macro Context Analysis"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "883854ea-1e2b-4764-8aeb-20f6c23024c8",
+              "name": "your_api_key",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1696,
+        432
+      ],
+      "id": "438e153f-f664-401f-b1ef-ea491e729847",
+      "name": "set_api_key"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=crude_oil_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1184,
+        976
+      ],
+      "id": "2749c220-0563-441d-8d3d-72f744ed3839",
+      "name": "crude_oil_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_price_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        224
+      ],
+      "id": "f4a6ebe6-0cd6-4865-889d-64f1f0ae9d5c",
+      "name": "btc_price_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=rsi14&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        80
+      ],
+      "id": "b8d33644-42b6-4649-88e0-e937804a5012",
+      "name": "rsi14"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=fear_greed_index_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        368
+      ],
+      "id": "ec3568cc-2fa8-43a9-8818-bd5ef556b1d8",
+      "name": "fear_greed_index_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_funding_rate&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        512
+      ],
+      "id": "d4b12617-0c52-4201-a420-79cfc569878c",
+      "name": "btc_funding_rate"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=crypto_news_summary&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        800
+      ],
+      "id": "e7d8cc10-061e-4eb6-8c09-aba6d7514fd9",
+      "name": "crypto_news_summary"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_open_interest&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1552,
+        656
+      ],
+      "id": "c8387994-660a-4939-b847-3bcddfc4049b",
+      "name": "btc_open_interest"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_200wma_distance&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        144
+      ],
+      "id": "9e945797-0b89-46dd-b136-2bce1ca765fc",
+      "name": "btc_200wma_distance"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=rsi14_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        288
+      ],
+      "id": "3a3615ae-6127-40dd-8500-417e203ca52e",
+      "name": "rsi14_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=bull_market_support_band&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        432
+      ],
+      "id": "7d98ef4f-a8db-4633-9be0-a76e07396d15",
+      "name": "bull_market_support_band"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=50wma&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        592
+      ],
+      "id": "218e0937-8a3c-4fb6-9fa0-2441beb3d177",
+      "name": "50wma"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_dominance_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        736
+      ],
+      "id": "1db06046-7b0f-4649-b32f-2d96564a68b4",
+      "name": "btc_dominance_trend"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=These are today's data about Bitcoin and the crypto cycle, your job is to describe where in the cycle are we. \n\nThis can be: \n\n- Early Bull Run\n- Mid Bull Run\n- Late Bull Run\n- Euphoria Phase (Bubble Territory)\n- Early Bear Market\n- Mid Bear Market\n- Late Bear Market / Bottom\n\nGive a higher ponderation to risk_context. If \"risk_context\" is \"Elevated cycle risk\" consider we are at least in Late Bull Run. \n\nFeel free to add additional notes if you find them important. \n\nDo not write more than 3-4 lines.\n\nGive this short analysis a clear title: \"Top & Bottom Watchout\"\n\n{{ JSON.stringify($json, null, 2) }}\n\n\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1072,
+        256
+      ],
+      "id": "b4d6456d-5e62-4fab-bb65-7140d856aa3b",
+      "name": "Top & Bottom Watchout"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a senior crypto market strategist.\n\nGoal: Compress the meso-level BTC snapshot in the JSON into a concise daily trading brief used alongside a separate MICRO timing model. Be a signal filter, not a narrative.\n\nInput JSON:\n{{ JSON.stringify($json, null, 2) }}\n\nRules:\n- Use ONLY values present in the JSON; if absent, write \"not provided\".\n- Prefer implications over raw stats (e.g., “scarcity intact” instead of listing stock/flow/block_reward numbers).\n- Price & Trend must reference only what’s in JSON (e.g., Bull Market Support Band: 20W EMA / 21W SMA, 50W MA). Do NOT invent 50D/200D if missing.\n- Momentum: use RSI if present; otherwise \"not provided\".\n- Cycle: compare price vs S2F fair_value and state rainbow zone; mention halving progress and composite/phase if present.\n- Dominance: report latest level and micro/meso/macro trend labels if present; state rotation implication.\n- Levels: list bull band (20W EMA / 21W SMA) and 50W MA as Support; include Resistance ONLY if explicitly provided; else \"not provided\".\n- Outlook: give a 2–4 week bias and a 3–6 month view tied to the levels above.\n- Triggers: one Bull and one Bear condition, explicitly tied to those levels (e.g., weekly close > band; weekly close < 50W MA).\n- Keep it actionable and compact. Plain language. No markdown, no tables.\n- Word cap: 300 words total. Use \"$\" in prices and make it easy to read with unequivocal terms and concepts (eg. Bitcoin Dominance instead of BTC.D)\n\nOutput EXACTLY this structure (no extra text/markdown):\n\ntitle: \"BTC Meso Market Analysis\"\nmesoBrief:\nPrice & Trend: [...]\nMomentum: [...]\nCycle (S2F & Rainbow): [...]\nOn-chain/Issuance: [...]\nDominance & Rotation: [...]\nLevels:\n- Support: [...]\n- Resistance: [...]\nOutlook:\n- 2–4 weeks: [...]\n- 3–6 months: [...]\ntriggers:\n- Bull: [...]\n- Bear: [...]\nmesoBias: \"mildly-bullish\" | \"neutral\" | \"mildly-bearish\"\nhorizon: [\"weeks\",\"months\"]\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1072,
+        624
+      ],
+      "id": "f4df4875-7fcf-4019-90b1-5f89ce8aa140",
+      "name": "BTC Meso Market Analysis"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=ma50_ma200_trend&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        64
+      ],
+      "id": "ca8c2a8c-1725-4730-b77c-1311316af754",
+      "name": "ma50_ma200_trend"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=btc_futures_basis&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        208
+      ],
+      "id": "94a47602-36aa-4e62-84b7-ea152b2eabb9",
+      "name": "btc_futures_basis"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=pi_cycle_top&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        352
+      ],
+      "id": "0fcc24cf-6bf2-4e33-90fb-67463fe807ae",
+      "name": "pi_cycle_top"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=rainbow_chart&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        496
+      ],
+      "id": "2fcff3c0-e81e-4641-84a9-fe4fbf17624c",
+      "name": "rainbow_chart"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=stock_to_flow&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        640
+      ],
+      "id": "9be692e5-3897-4a16-b0b1-72b0f1d20aee",
+      "name": "stock_to_flow"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunchmachine.com/webhook/indicators?indicator=halving_cycle&api_key={{ $node[\"set_api_key\"].json[\"your_api_key\"] }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        784
+      ],
+      "id": "c52455f9-a9cc-46ec-961c-ce2e629ba12d",
+      "name": "halving_cycle"
+    },
+    {
+      "parameters": {
+        "content": "## Meso Context\n\n",
+        "height": 1360,
+        "width": 1584,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -176,
+        -192
+      ],
+      "typeVersion": 1,
+      "id": "5067bd2a-d128-42c8-9636-6ba80e045e64",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        160
+      ],
+      "id": "388cf055-1a4b-4861-a5c9-9ab417fa9f32",
+      "name": "Merge Meso"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        640
+      ],
+      "id": "4b9f74c8-64d9-4c4a-9800-6976aaa30200",
+      "name": "Merge Top&Bottom"
+    },
+    {
+      "parameters": {
+        "content": "# READ ME\nThis workflow generates a daily crypto market insight for medium-term investors — focusing on cycle structure and practical accumulation or exit decisions.\n\n**It’s not a trading bot**, but an AI analyst that interprets macro, meso, micro, and cycle indicators to tell you what makes sense today.\n\nAll required indicators are identified in the nodes — you can connect your favorite APIs if you wish.\n\nHowever, they’re already preconfigured to work with the Hunch Machine API, which delivers optimized, pre-digested indicators that provide perfect context for GPT-based analysis.\n\nJust add your API key once, and everything runs automatically.\n\nFor more info or to get your API key, visit hunchmachine.com",
+        "height": 352,
+        "width": 752,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1808,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "f56193c8-01b8-4587-ab7a-04dc13265111",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a quantitative analyst.  \nYour task is to interpret the JSON dataset provided below — it represents the latest *micro-level indicators* for a specific crypto asset.\n\n⚠️ Important:\n- Do NOT infer, speculate, or reference macro, meso, or external market context.\n- Only describe what is explicitly shown in the data.\n- If a metric is missing or null, omit it.\n- Keep the tone factual, concise, and technical.\n- Do not provide recommendations, outlooks, or predictions.\n- Your only goal is to organize and summarize the data clearly.\n\nGive your analysis a clear title: \"BTC Micro Market Analysis\"\n\nInput JSON:\n{{ JSON.stringify($json, null, 2) }}\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2272,
+        432
+      ],
+      "id": "556c95be-3a2f-413b-9554-779cf193086c",
+      "name": "Micro Market Analysis"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === Unified Market Insights Cleaner (no message / biweekly) ===\n// Mode: Run Once for All Items\nconst items = $input.all();\n\nlet macro, meso, micro, news, topbottom;\n\n// --- Helper to extract content from different formats ---\nfunction pickContent(d) {\n  return (\n    d?.choices?.[0]?.message?.content ??\n    d?.message?.content ??\n    d?.content ??\n    null\n  );\n}\n\n// --- Text classifier (keeps your original labels) ---\nfunction classify(text) {\n  if (!text || typeof text !== \"string\") return;\n  const t = text.toLowerCase();\n\n  if (!macro && (t.startsWith(\"macro \") || t.includes(\"macro market analysis\")))\n    macro = text;\n  else if (\n    !meso &&\n    (t.includes(\"meso market analysis\") || t.includes(\"price & trend (weekly)\"))\n  )\n    meso = text;\n  else if (\n    !micro &&\n    (t.includes(\"micro market analysis\") ||\n      (t.includes(\"snapshot\") && t.includes(\"delta_7d\")))\n  )\n    micro = text;\n  else if (\n    !news &&\n    (t.includes(\"today's crypto news summary\") ||\n      t.includes(\"notícias\") ||\n      t.includes(\"news\"))\n  )\n    news = text;\n  else if (\n    !topbottom &&\n    (t.includes(\"top & bottom watchout\") ||\n      t.includes(\"top and bottom watchout\") ||\n      t.includes(\"bull top & bear bottom\") ||\n      t.includes(\"bull top and bear bottom\") ||\n      t.includes(\"cycle turning point watch\"))\n  )\n    topbottom = text;\n}\n\n// --- Main loop ---\nfor (const it of items) {\n  const j = it.json;\n\n  // 🧩 GPT analysis blocks (arrays)\n  if (Array.isArray(j.data)) {\n    for (const d of j.data) classify(pickContent(d));\n  }\n\n  // 🧩 Direct content blocks\n  const text = pickContent(j);\n  if (text) classify(text);\n\n  // 📰 News API blocks\n  if (j.indicator === \"crypto_news_summary\" && j.summary) {\n    news =\n      `Today's Crypto News Summary\\n` +\n      `Source: ${j.source || \"Unknown\"} | Sentiment: ${\n        j.general_sentiment || \"N/A\"\n      } (${j.sentiment_score || \"-\"})\\n\\n` +\n      j.summary;\n  }\n}\n\n// --- Build output only with existing fields ---\nconst out = {};\nif (macro) out.macro = macro;\nif (meso) out.meso = meso;\nif (micro) out.micro = micro;\nif (news) out.news = news;\nif (topbottom) out.topbottom = topbottom;\n\nreturn [{ json: out }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2928,
+        432
+      ],
+      "id": "31954687-90d1-4236-ae67-b6f91a8f45b6",
+      "name": "Data Clean and Debug"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Imagine you’re a loud, confident crypto bro posting on X.\n\nYour goal is to create an engaging, slightly arrogant, and entertaining tweet that sounds like it came from someone who called every top and bottom before anyone else.\n\nBase your tweet on this take:\n\n{{ $json.message.content }}\n\nWrite the tweet around the strongest, most crowd-grabbing insight — make it feel obvious in hindsight and a bit prophetic.\n\nKeep it simple, emotional, and for the masses, not analysts.\n\nTone: bold, confident, maybe a touch of sarcasm or “told-you-so” energy.\nFormat:\n\nShort sentences.\n\nUse line breaks (with blank lines) for rhythm.\n\nNo em dashes, hashtags, or complex terms.\n\nMax one clear call to action or punchline at the end (e.g., “Pay attention.”, “You’ve been warned.”, “Still early.”).\n\nConsider we have a premium X account so feel free to use a few extra characters to elaborate.\n\nOutput only the tweet — nothing else.\n\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        3408,
+        432
+      ],
+      "id": "04aa89b7-080c-4089-b34e-6b4534091301",
+      "name": "Engaging Tweet"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "GPT-5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Imagine you are a crypto market analyst. You don’t give advice about short-term movements — only about opportunities to accumulate or exit from a cycle perspective.\n\nIf there are key levels to watch, you may mention them as long as they are relevant to the mid-term cycle investment strategy. \n\nThe overall rule is: if there’s still time left in the bull run and a consolidation opportunity appears, you may want to accumulate. If the market is overextended or a major reversal into a bear market seems near, you may want to exit.\n\nThe main goal is to make great entries and exits at cycle tops and bottoms, while navigating bull and bear phases through local opportunities.\n\nIf key levels are in sight, or the base case suggests that supports or resistances are coming soon, manage current entries or exits with that base case in mind — assuming there’s a chance it might happen and acting accordingly.\n\nI don’t want confusing “ifs.” I want to know what to do now, focusing only on your strongest base case for the cycle. \n\nI don’t want local trims or nibbles, and I don’t care about short-term wins or losses. I just want to take advantage of the market cycle on a macro level.\n\nConsider the current picture and the most likely base case, and act accordingly — without adding extra conditions.\n\nAssume I may or may not have already entered the market; refer to both possibilities clearly, including specific price levels or zones that might be of interest.\n\nMention altcoins briefly.\n\nMention relevant news briefly for additional context on sentiment.\n\nWrite a single, simple, easy-to-follow paragraph — no bullet points — using a natural, informal tone, as if explaining to a friend.\n\nAt the end, add a short, dense, and technical justification labeled “Reasoning:”, separated with a double line break. \n\nINPUT:\n{{ $json.macro }}\n{{ $json.meso }}\n{{ $json.micro }}\n{{ $json.news }}\n{{ $json.topbottom }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        3104,
+        432
+      ],
+      "id": "078d5304-ccca-4be5-a20d-ae0893f33abd",
+      "name": "Market Stance"
+    },
+    {
+      "parameters": {
+        "content": "## Optional\nTweet example.",
+        "height": 368,
+        "width": 304,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3376,
+        304
+      ],
+      "typeVersion": 1,
+      "id": "b555c627-3599-440f-983c-f9865e33e1e5",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    data: items.map(i => i.json)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        416
+      ],
+      "id": "0e6e0aab-3bc0-4d86-8207-f0ab3e6e9365",
+      "name": "Clean Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        448
+      ],
+      "id": "6439abf6-a03f-405a-ab8f-67c3b303561a",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    data: items.map(i => i.json)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        448
+      ],
+      "id": "fd4656a7-0833-4570-8276-e47de7476128",
+      "name": "Clean Merge2"
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1888,
+        368
+      ],
+      "id": "1f9a81a6-1591-44ec-89ba-0dacd43fd02f",
+      "name": "Merge3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Clean Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge5": {
+      "main": [
+        [
+          {
+            "node": "Data Clean and Debug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Merge3": {
+      "main": [
+        [
+          {
+            "node": "Micro Market Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "treasury_yield": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fed_funds_rate": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "macro_news_summary": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "btc_overview": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "gold_price_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "m2_money_supply": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "set_api_key",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 5
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "dxy_proxy": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Macro Context Analysis": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_api_key": {
+      "main": [
+        [
+          {
+            "node": "btc_200wma_distance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "rsi14_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "bull_market_support_band",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "50wma",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_dominance_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ma50_ma200_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_futures_basis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "pi_cycle_top",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "rainbow_chart",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "halving_cycle",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "stock_to_flow",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "treasury_yield",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fed_funds_rate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "macro_news_summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_overview",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "dxy_proxy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "gold_price_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "m2_money_supply",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "crude_oil_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "rsi14",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_price_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fear_greed_index_trend",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_funding_rate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "btc_open_interest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "crypto_news_summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crude_oil_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "rsi14": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "btc_price_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "fear_greed_index_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "btc_funding_rate": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "btc_open_interest": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "crypto_news_summary": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "btc_200wma_distance": {
+      "main": [
+        [
+          {
+            "node": "Merge Meso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rsi14_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge Meso",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "bull_market_support_band": {
+      "main": [
+        [
+          {
+            "node": "Merge Meso",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "50wma": {
+      "main": [
+        [
+          {
+            "node": "Merge Meso",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "btc_dominance_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge Meso",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Top & Bottom Watchout": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "BTC Meso Market Analysis": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "ma50_ma200_trend": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "btc_futures_basis": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "pi_cycle_top": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "rainbow_chart": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "stock_to_flow": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "halving_cycle": {
+      "main": [
+        [
+          {
+            "node": "Merge Top&Bottom",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge Meso": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Top&Bottom": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Micro Market Analysis": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Data Clean and Debug": {
+      "main": [
+        [
+          {
+            "node": "Market Stance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Market Stance": {
+      "main": [
+        [
+          {
+            "node": "Engaging Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Merge": {
+      "main": [
+        [
+          {
+            "node": "Macro Context Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Clean Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Merge2": {
+      "main": [
+        [
+          {
+            "node": "Top & Bottom Watchout",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BTC Meso Market Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Clean Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "628c0d6f-0f55-4829-975e-7fee655cab02",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "bRm173Se29cPFdbO",
+  "tags": [
+    {
+      "createdAt": "2025-10-31T13:12:26.647Z",
+      "updatedAt": "2025-10-31T13:12:26.647Z",
+      "id": "XLdkXZJ5ADfY0hYE",
+      "name": "hunchmachine"
+    },
+    {
+      "createdAt": "2025-11-03T02:59:14.308Z",
+      "updatedAt": "2025-11-03T02:59:14.308Z",
+      "id": "Y5WyFPT75izhdDSU",
+      "name": "Free Automation"
+    }
+  ]
+}

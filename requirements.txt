@@ -1,0 +1,26 @@
+# Core Dependencies
+pandas>=2.0.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Trading & Technical Analysis
+ta>=0.11.0
+alpaca-py>=0.9.0
+
+# Database
+supabase>=2.2.0
+
+# Development Dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+ruff>=0.1.0
+mypy>=1.5.0
+black>=23.0.0
+
+# News & LLM
+newsapi-python>=0.2.7
+openai>=1.0.0
+
+# Data
+yfinance
+finnhub-python>=0.2.0

@@ -1,0 +1,2916 @@
+{
+  "name": "📈 Deep Report + Automatic Trading: Automate Your Stock Trades with AI Analysis",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        -192
+      ],
+      "id": "25c12ca0-cac5-4091-bd2e-7dd29920c160",
+      "name": "Think"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "danelfin",
+          "mode": "list",
+          "cachedResultName": "danelfin"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        3760,
+        624
+      ],
+      "id": "01e3b67c-5d7e-49c5-bd5a-656aee0ac5df",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4TXwWjRCifw2A3yw",
+          "name": "Supabase tm"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Work with data in supabase to understand danelfin scoring and strategy",
+        "tableName": {
+          "__rl": true,
+          "value": "danelfin",
+          "mode": "list",
+          "cachedResultName": "danelfin"
+        },
+        "topK": 5,
+        "includeDocumentMetadata": false,
+        "useReranker": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        3408,
+        -16
+      ],
+      "id": "2207a97d-716c-4e2e-8422-ab294805cab2",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4TXwWjRCifw2A3yw",
+          "name": "Supabase tm"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3376,
+        128
+      ],
+      "id": "67b9a43e-243c-4802-b6e6-3f538af52fe1",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "OQJASLp1qn1StvpI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        3904,
+        848
+      ],
+      "id": "5f7f688e-e960-44b3-b4a3-a7fa2985a4d3",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 700,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        3952,
+        1008
+      ],
+      "id": "54ae7305-0156-4ac9-922d-3ae1875e8603",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3632,
+        864
+      ],
+      "id": "12bad484-8499-4d44-9be6-d72ef19d636d",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "OQJASLp1qn1StvpI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "rerank-english-v3.0"
+      },
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        144
+      ],
+      "id": "9f2a39bd-58cc-46a9-8579-5320dcc5cf36",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "PCdrjFiCsNkbtU2E",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "ranking endpoint",
+        "url": "https://apirest.danelfin.com/ranking",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', ``, 'string') }}"
+            },
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        4688,
+        -112
+      ],
+      "id": "a0346957-3450-485f-9129-d0b06fe32847",
+      "name": "ranking",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WtAyYH2L9Z9enZqX",
+          "name": "danelfin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "sectors endpoint",
+        "url": "https://apirest.danelfin.com/sectors",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', ``, 'string') }}"
+            },
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        4464,
+        -112
+      ],
+      "id": "00c6073b-4b33-43a9-8a56-2d0549971b5d",
+      "name": "sectors",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WtAyYH2L9Z9enZqX",
+          "name": "danelfin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "industries endpoint",
+        "url": "https://apirest.danelfin.com/industries",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        4576,
+        -112
+      ],
+      "id": "45a8d10f-5b86-404e-a46a-1ad92ee29613",
+      "name": "industries",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WtAyYH2L9Z9enZqX",
+          "name": "danelfin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Load sata to vector database",
+        "height": 660,
+        "width": 1136,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3264,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "1c2c618b-20db-4aa0-af0b-66a4eada4be1",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "name": "technical_analysis",
+        "description": "Call this tool to get an analysis of a requested stock. It'll be obligatory to pass ticker.",
+        "workflowId": {
+          "__rl": true,
+          "value": "I1CW4ivmFZZ0Kus9",
+          "mode": "list",
+          "cachedResultName": "Technical analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ $fromAI('ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticker",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ticker",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chart_style",
+              "type": "string",
+              "display": true,
+              "removed": true,
+              "required": false,
+              "displayName": "chart_style",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "c53c22db-c04a-4bbd-b196-e44fb813c4aa",
+      "name": "Technical Analysis Tool1",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        4848,
+        976
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "name": "trends_analysis",
+        "description": "Call this tool to get an analysis of a requested stock. It'll be obligatory to pass ticker.",
+        "workflowId": {
+          "__rl": true,
+          "value": "iL8E8At1QcCD4xab",
+          "mode": "list",
+          "cachedResultName": "Trends analysis"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "31c63dc9-3ec3-4985-8d6e-9ab318720c8f",
+      "name": "Trends Analysis Tool1",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        5072,
+        992
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {},
+      "id": "9f9fb939-de73-4053-aabd-3e80be1d7e65",
+      "name": "Think2",
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "position": [
+        5184,
+        976
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "727f770b-1279-48a8-8e2f-77276010d207",
+              "name": "Ticker",
+              "value": "={{ $json.ticker }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4688,
+        688
+      ],
+      "id": "03cdfb7f-92a8-4c77-abe4-41827551366b",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "content": "## Deep analysis ",
+        "height": 672,
+        "width": 1240,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4400,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "0fd13acb-3e36-43ff-b067-81dae78208dc",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-4-maverick",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4672,
+        976
+      ],
+      "id": "e3b04061-282a-461e-a765-29bd01d81c95",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1t22HwKbMlWsWxcJ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "dd51496d-e811-47f0-a595-6accff221265",
+      "name": "Download Chart",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4416,
+        1296
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.chart-img.com/v2/tradingview/advanced-chart/storage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"style\": \"candle\",\n  \"theme\": \"light\",\n  \"interval\": \"1W\",\n  \"symbol\": \"{{ $json.ex }}:{{ $json.ticker }}\",\n  \"override\": {\n    \"showStudyLastValue\": false\n  },\n  \"studies\": [\n    {\n      \"name\": \"Volume\",\n      \"forceOverlay\": true\n    },\n    {\n      \"name\": \"Moving Average Exponential\",\n      \"inputs\": {\n        \"length\": 200\n      }\n    },\n    {\n      \"name\": \"Relative Strength Index\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "6159dede-050e-4522-b6fd-2f6ca3c66a79",
+      "name": "Get Chart URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4208,
+        1296
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GdGHv0TGgnk1u4ZZ",
+          "name": " chart image"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.ticker }}"
+            },
+            {
+              "name": "interval",
+              "value": "1day"
+            },
+            {
+              "name": "outputsize",
+              "value": "180"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $json.TwelveData_API_Key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "7c56bac7-5ce3-4f8f-8358-a3d55bc26fa2",
+      "name": "Get Price History",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3648,
+        1568
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/bbands",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.ticker }}"
+            },
+            {
+              "name": "interval",
+              "value": "1day"
+            },
+            {
+              "name": "outputsize",
+              "value": "1"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $json.TwelveData_API_Key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "e25f61b2-3f6a-47b0-b328-799655d8698d",
+      "name": "Get Bollinger Bands",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3648,
+        1728
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/macd",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.ticker }}"
+            },
+            {
+              "name": "interval",
+              "value": "1day"
+            },
+            {
+              "name": "outputsize",
+              "value": "1"
+            },
+            {
+              "name": "apikey",
+              "value": "={{ $json.TwelveData_API_Key }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "e382a0d9-91e0-4f70-9ad4-eff792804f54",
+      "name": "Get MACD",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3648,
+        1888
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "85c0784b-e741-4854-ab9e-2d06234a4316",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        4160,
+        1728
+      ],
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get historical price data\nconst data = $input.item.json;\n\n// Check if data exists\nif (!data.values || data.values.length === 0) {\n  return { json: { error: \"No price data available\", ticker: data.meta?.symbol } };\n}\n\n// Convert prices to numbers\nconst prices = data.values.map(v => parseFloat(v.close)).reverse();\n\n// Function to calculate Fibonacci levels\nfunction calculateFibonacciLevels() {\n  // Find min and max prices\n  const max = Math.max(...prices);\n  const min = Math.min(...prices);\n  const diff = max - min;\n  \n  return {\n    level_0: min.toFixed(2),\n    level_0_236: (min + diff * 0.236).toFixed(2),\n    level_0_382: (min + diff * 0.382).toFixed(2),\n    level_0_5: (min + diff * 0.5).toFixed(2),\n    level_0_618: (min + diff * 0.618).toFixed(2),\n    level_0_786: (min + diff * 0.786).toFixed(2),\n    level_1: max.toFixed(2)\n  };\n}\n// Function to identify support and resistance levels\nfunction findSupportResistanceLevels() {\n  // We need at least 30 data points\n  if (prices.length < 30) {\n    return { support: [], resistance: [] };\n  }\n  \n  const supportLevels = [];\n  const resistanceLevels = [];\n  \n  // Check each point (except edges) if it's a local minimum or maximum\n  const lookback = 5; // how many points to check in each direction\n  \n  for (let i = lookback; i < prices.length - lookback; i++) {\n    // Check for local minimum (support)\n    let isMinimum = true;\n    for (let j = i - lookback; j < i; j++) {\n      if (prices[j] <= prices[i]) {\n        isMinimum = false;\n        break;\n      }\n    }\n    \n    for (let j = i + 1; j <= i + lookback; j++) {\n      if (prices[j] <= prices[i]) {\n        isMinimum = false;\n        break;\n      }\n    }\n    \n    if (isMinimum) {\n      supportLevels.push(prices[i]);\n    }\n    \n    // Check for local maximum (resistance)\n    let isMaximum = true;\n    for (let j = i - lookback; j < i; j++) {\n      if (prices[j] >= prices[i]) {\n        isMaximum = false;\n        break;\n      }\n    }\n    \n    for (let j = i + 1; j <= i + lookback; j++) {\n      if (prices[j] >= prices[i]) {\n        isMaximum = false;\n        break;\n      }\n    }\n    \n    if (isMaximum) {\n      resistanceLevels.push(prices[i]);\n    }\n  }\n  \n  // Sort and remove duplicates\n  const uniqueSupports = [...new Set(supportLevels)];\n  const uniqueResistances = [...new Set(resistanceLevels)];\n  \n  // Return only significant levels (up to 5 of each)\n  return {\n    support: uniqueSupports.sort((a, b) => b - a).slice(0, 5).map(p => p.toFixed(2)),\n    resistance: uniqueResistances.sort((a, b) => a - b).slice(0, 5).map(p => p.toFixed(2))\n  };\n}\n\n// Calculate levels\nconst fibonacciLevels = calculateFibonacciLevels();\nconst supportResistanceLevels = findSupportResistanceLevels();\n\n// Return information with additional stock data\nreturn {\n  json: {\n    ticker: data.meta.symbol,\n    currentPrice: parseFloat(data.values[0].close).toFixed(2),\n    fibonacci: fibonacciLevels,\n    supportResistance: supportResistanceLevels,\n    dataPoints: prices.length\n  }\n};"
+      },
+      "id": "a51be081-47d9-4461-8d95-70bbb8baf268",
+      "name": "Calculate Support Resistance",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3872,
+        1568
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Getting data from different sources\n// Checking existence of objects before trying to access them\nconst items = $input.all();\nconst fibData = $input.first().json;\n\n// Trying to locate Bollinger Bands and MACD data if they exist\nlet bbandsData = null;\nlet macdData = null;\n\n// Trying to check if there is data in additional items\nif (items.length > 1 && items[1] && items[1].json) {\n  bbandsData = items[1].json;\n}\n\nif (items.length > 2 && items[2] && items[2].json) {\n  macdData = items[2].json;\n}\n\n// Creating data structure for the response - ensure all fields exist\nconst result = {\n  ticker: fibData.ticker || \"Unknown\",\n  currentPrice: fibData.currentPrice || \"0\",\n  timestamp: new Date().toISOString(),\n  technicalAnalysis: {\n    fibonacci: fibData.fibonacci || {},\n    supportResistance: fibData.supportResistance || { support: [], resistance: [] },\n    bollingerBands: {},\n    macd: {}\n  }\n};\n\n// Adding Bollinger Bands data - only if they exist\nif (bbandsData && bbandsData.values && bbandsData.values.length > 0) {\n  const bbands = bbandsData.values[0];\n  result.technicalAnalysis.bollingerBands = {\n    upperBand: parseFloat(bbands.upper_band).toFixed(2),\n    middleBand: parseFloat(bbands.middle_band).toFixed(2),\n    lowerBand: parseFloat(bbands.lower_band).toFixed(2)\n  };\n} else if (bbandsData && bbandsData.status === \"ok\") {\n  // If returning another data format\n  result.technicalAnalysis.bollingerBands = {\n    upperBand: bbandsData.upperBand || bbandsData.upper_band || \"0\",\n    middleBand: bbandsData.middleBand || bbandsData.middle_band || \"0\",\n    lowerBand: bbandsData.lowerBand || bbandsData.lower_band || \"0\"\n  };\n}\n\n// Adding MACD data - only if they exist\nif (macdData && macdData.values && macdData.values.length > 0) {\n  const macd = macdData.values[0];\n  result.technicalAnalysis.macd = {\n    macd: parseFloat(macd.macd).toFixed(2),\n    signal: parseFloat(macd.signal).toFixed(2),\n    histogram: parseFloat(macd.hist).toFixed(2)\n  };\n} else if (macdData && macdData.status === \"ok\") {\n  // If returning another data format\n  result.technicalAnalysis.macd = {\n    macd: macdData.macd || \"0\",\n    signal: macdData.signal || \"0\",\n    histogram: macdData.histogram || macdData.hist || \"0\"\n  };\n}\n\n// Creating summary and recommendation\nlet bullishFactors = [];\nlet bearishFactors = [];\n\n// Analyzing Bollinger Bands - only if data exists\nconst bbands = result.technicalAnalysis.bollingerBands;\nif (bbands.upperBand && bbands.lowerBand) {\n  const currentPrice = parseFloat(result.currentPrice);\n  const upperBand = parseFloat(bbands.upperBand);\n  const lowerBand = parseFloat(bbands.lowerBand);\n  \n  if (!isNaN(currentPrice) && !isNaN(upperBand) && !isNaN(lowerBand)) {\n    if (currentPrice > upperBand) {\n      bearishFactors.push(\"Price above upper Bollinger Band - potential overbought\");\n    } else if (currentPrice < lowerBand) {\n      bullishFactors.push(\"Price below lower Bollinger Band - potential oversold\");\n    }\n  }\n}\n\n// Analyzing MACD - only if data exists\nconst macdInfo = result.technicalAnalysis.macd;\nif (macdInfo.macd && macdInfo.signal) {\n  const macd = parseFloat(macdInfo.macd);\n  const signal = parseFloat(macdInfo.signal);\n  \n  if (!isNaN(macd) && !isNaN(signal)) {\n    if (macd > signal) {\n      bullishFactors.push(\"MACD above signal line - positive indication\");\n    } else {\n      bearishFactors.push(\"MACD below signal line - negative indication\");\n    }\n  }\n}\n\n// Analyzing support and resistance levels - only if data exists\nconst supportResistance = result.technicalAnalysis.supportResistance;\nif (supportResistance.support && supportResistance.resistance) {\n  const currentPrice = parseFloat(result.currentPrice);\n  \n  if (!isNaN(currentPrice)) {\n    const supports = supportResistance.support.map(s => parseFloat(s)).filter(s => !isNaN(s));\n    const resistances = supportResistance.resistance.map(r => parseFloat(r)).filter(r => !isNaN(r));\n    \n    // Finding the closest support level\n    let closestSupport = null;\n    let minSupportDist = Infinity;\n    for (const support of supports) {\n      if (support < currentPrice) {\n        const dist = currentPrice - support;\n        if (dist < minSupportDist) {\n          minSupportDist = dist;\n          closestSupport = support;\n        }\n      }\n    }\n    \n    // Finding the closest resistance level\n    let closestResistance = null;\n    let minResistanceDist = Infinity;\n    for (const resistance of resistances) {\n      if (resistance > currentPrice) {\n        const dist = resistance - currentPrice;\n        if (dist < minResistanceDist) {\n          minResistanceDist = dist;\n          closestResistance = resistance;\n        }\n      }\n    }\n    \n    // Adding support/resistance analysis\n    if (closestSupport !== null) {\n      const supportPercentage = ((currentPrice - closestSupport) / currentPrice * 100).toFixed(2);\n      if (supportPercentage < 5) {\n        bullishFactors.push(`Price close to support level (${supportPercentage}%) - potential upward reversal`);\n      }\n    }\n    \n    if (closestResistance !== null) {\n      const resistancePercentage = ((closestResistance - currentPrice) / currentPrice * 100).toFixed(2);\n      if (resistancePercentage < 5) {\n        bearishFactors.push(`Price close to resistance level (${resistancePercentage}%) - potential downward reversal`);\n      }\n    }\n  }\n}\n\n// Analyzing Fibonacci - only if data exists\nconst fibonacci = result.technicalAnalysis.fibonacci;\nif (fibonacci && Object.keys(fibonacci).length > 0) {\n  const currentPrice = parseFloat(result.currentPrice);\n  \n  if (!isNaN(currentPrice)) {\n    const fibLevels = Object.values(fibonacci).map(level => parseFloat(level)).filter(level => !isNaN(level));\n    fibLevels.sort((a, b) => a - b);\n    \n    // Checking which Fibonacci level the price is at\n    for (let i = 0; i < fibLevels.length - 1; i++) {\n      if (currentPrice >= fibLevels[i] && currentPrice <= fibLevels[i+1]) {\n        // If the price is close to a Fibonacci resistance level\n        if (Math.abs(currentPrice - fibLevels[i+1]) / currentPrice * 100 < 2) {\n          bearishFactors.push(`Price close to Fibonacci level ${[0, 23.6, 38.2, 50, 61.8, 78.6, 100][Math.min(i+1, 6)]}% - potential resistance`);\n        }\n        // If the price is close to a Fibonacci support level\n        if (Math.abs(currentPrice - fibLevels[i]) / currentPrice * 100 < 2) {\n          bullishFactors.push(`Price close to Fibonacci level ${[0, 23.6, 38.2, 50, 61.8, 78.6, 100][Math.min(i, 6)]}% - potential support`);\n        }\n        break;\n      }\n    }\n  }\n}\n\n// Adding general recommendation based on factors\nlet recommendation = \"\";\nif (bullishFactors.length > bearishFactors.length) {\n  recommendation = \"Positive\";\n} else if (bearishFactors.length > bullishFactors.length) {\n  recommendation = \"Negative\";\n} else {\n  recommendation = \"Neutral\";\n}\n\n// Adding summary to the result\nresult.summary = {\n  recommendation: recommendation,\n  bullishFactors: bullishFactors,\n  bearishFactors: bearishFactors\n};\n\nreturn { json: result };\n"
+      },
+      "id": "b83d4d06-9cca-47dd-948f-d3693a6ae5f0",
+      "name": "Organizing Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4368,
+        1728
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "cae1bd43-2eb3-42bb-a5db-900076f3ba56",
+      "name": "Merge-2",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        4992,
+        1568
+      ],
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fdf7e016-7082-4146-9038-454139023990",
+              "name": "ai_agent_visual_analysis",
+              "type": "string",
+              "value": "={{ $('First Technical Analysis').item.json.choices[0].message.content }}"
+            },
+            {
+              "id": "0ed32c8f-cde9-4ef7-ac3a-c68e4f019eba",
+              "name": "url",
+              "value": "={{ $('Get Chart URL').item.json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fe8b693e-a2a6-416d-b805-5e0f2d9a5a4f",
+      "name": "Set Variable",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        4736,
+        1296
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * INPUT: items[0].json (Original JSON)\n * OUTPUT: { textPayload: \"```json\\n{ ... }\\n```\" }\n */\n\nconst pretty = JSON.stringify(items[0].json, null, 2);\nconst wrapped = `\\`\\`\\`json\\n${pretty}\\n\\`\\`\\``;\n\nreturn [\n  {\n    json: {\n      textPayload: wrapped\n    }\n  }\n];\n"
+      },
+      "id": "4921be1f-1699-4d7f-a6a0-7e80dd18296e",
+      "name": "Warp as JSON for GPT",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        5168,
+        1568
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fdf7e016-7082-4146-9038-454139023990",
+              "name": "response",
+              "type": "string",
+              "value": "={{ $json.textPayload }}"
+            },
+            {
+              "id": "4e5afd49-67c2-40ab-bc8c-565dea3850ed",
+              "name": "image",
+              "type": "string",
+              "value": "={{ $('Merge-2').item.json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bd3e7aa-f2c0-421b-8e84-5bca4bbbe48f",
+      "name": "Set Final Response",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        5520,
+        1568
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf5f7210-5b54-4f4a-abf7-87873be82df4",
+              "name": "ticker",
+              "type": "string",
+              "value": "={{ $json.ticker }}"
+            },
+            {
+              "id": "9f008c4b-60e2-4d99-a119-b0170ec28358",
+              "name": "TwelveData_API_Key",
+              "type": "string",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3abddf6a-6106-4583-8dc2-37eda37d4370",
+      "name": "Set Stock Symbol and API Key",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3296,
+        1568
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=# Role\nYou are a professional chart analyst.\n\n# Input\nOne candlestick chart image (weekly or daily) showing price, single EMA, volume,\nand RSI.\n\n# Output\nReturn JSON only (no extra text) following this schema:\n{\n  \"description\": \"string\",                   // short narrative, ≤ 80 words\n  \"candlestickPatterns\": [\"...\", ...],       // ≤ 3 multi-bar patterns\n  \"wickSignal\": \"longUpper\" | \"longLower\" | \"inside\",   // last candle’s wick bias\n  \"gapSinceLast\": \"up\" | \"down\" | \"none\",    // price gap vs previous bar\n  \"emaSlope\": \"steepUp\" | \"up\" | \"flat\" | \"down\",   // direction of the EMA line\n  \"volumeAnomaly\": \"spike\" | \"dry\" | \"normal\",      // latest bar vs 30-bar avg\n  \"trendChannel\": {                          // visible channel if any\n    \"upper\": number,\n    \"lower\": number\n  },\n  \"rsiNumeric\": number,\n  \"rsiState\": \"overbought\" | \"oversold\" | \"neutral\",\n  \"rsiDivergence\": \"bullish\" | \"bearish\" | \"none\"\n}\n\n\n# Rules\n– Use ONLY what you see; no external data.\n– Numbers: max two decimals.\n– If a value is absent/unclear, set it to null.\n",
+        "inputType": "base64",
+        "simplify": false,
+        "options": {
+          "detail": "high"
+        }
+      },
+      "id": "36c2e5d5-b582-4115-8507-b23bd9ca8a9b",
+      "name": "First Technical Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        4576,
+        1296
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "OQJASLp1qn1StvpI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f06b7229-8b9b-4d34-910f-c83ec250d959",
+              "name": "ticker",
+              "value": "={{ $json.meta.symbol }}",
+              "type": "string"
+            },
+            {
+              "id": "f609225d-cc29-4cb5-8583-ad6dd30ead8c",
+              "name": "ex",
+              "value": "={{ $json.meta.exchange }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4048,
+        1296
+      ],
+      "id": "90ae7e13-d9a3-41c6-b209-f19fd911a96d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "# Technical Analysis Tool\n",
+        "height": 1000,
+        "width": 2384,
+        "color": 7
+      },
+      "id": "df344900-8914-4e5d-ba8d-97bb0d6dba8d",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        1184
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "feed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        4192,
+        2496
+      ],
+      "id": "9c6eeaa7-0ece-4152-b6bb-7e081ab07486",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1️⃣ Función de filtrado\nfunction filtrarArticulos(feed, ticker, umbral = 0.45) {\n\treturn feed.filter(art =>\n\t\t(art.ticker_sentiment ?? []).some(ts =>\n\t\t\tts.ticker === ticker && Number(ts.relevance_score) > umbral\n\t\t)\n\t);\n}\n\n// 2️⃣ Entradas -------------------------------------------------\n\n// Ticker que vienes arrastrando del nodo “Edit Fields1”\nconst ticker = $('Edit Fields3').first().json.ticker;   // ej. \"CSCO\"\n\n// Feed con los 7+ artículos; si está anidado lo aplanamos\nconst feedRaw = items[0].json.feed;\nconst feed    = Array.isArray(feedRaw?.[0]) ? feedRaw.flat(Infinity) : feedRaw;\n\n// 3️⃣ Filtro ---------------------------------------------------\nconst filtrados = filtrarArticulos(feed, ticker, 0.45);\n\n// 4️⃣ Salida: devolvemos un ÚNICO item con la lista de artículos\nreturn [\n\t{\n\t\tjson: {\n\t\t\tticker,\n\t\t\tnumArticulos: filtrados.length,\n\t\t\tarticulos: filtrados\n\t\t}\n\t}\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4416,
+        2496
+      ],
+      "id": "8658e813-0395-4892-84ec-b2c4d18e4660",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build an array with the past 3 days, formatted as YYYYMMDDTHHmm\nfunction getPastThreeDates() {\n  const dates = [];\n  const today = new Date();\n\n  // Start at “yesterday” and go back 2 more days\n  for (let i = 1; i <= 3; i++) {\n    const d = new Date(today);\n    d.setDate(d.getDate() - i);\n    d.setHours(0, 0, 0, 0);\n\n    const year = d.getFullYear();\n    const month = String(d.getMonth() + 1).padStart(2, '0');\n    const day = String(d.getDate()).padStart(2, '0');\n    const hours = String(d.getHours()).padStart(2, '0');\n    const minutes = String(d.getMinutes()).padStart(2, '0');\n\n    dates.push(`${year}${month}${day}T${hours}${minutes}`);\n  }\n  return dates;\n}\n\n// Build the output n8n expects\nconst pastThreeDates = getPastThreeDates();\n\nreturn [\n  {\n    json: {\n      wanted_dates: pastThreeDates // → [\"20250719T0000\", \"20250718T0000\", \"20250717T0000\"]\n    }\n  }\n];\n"
+      },
+      "id": "6f356e6a-5281-48d2-86d7-980972ecf02e",
+      "name": "Generate Variables For API1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3376,
+        2496
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "=https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={{ $json.ticker }}&sort=RELEVANCE&time_from={{ $json.wanted_dates }}&apikey={{ $json.apikey }}",
+        "options": {}
+      },
+      "id": "ef1b8e2d-6345-4196-8609-fcb10816af5e",
+      "name": "Get News Data1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3968,
+        2496
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "finales",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        4848,
+        2496
+      ],
+      "id": "e35f3b7e-83c6-4559-8383-45b934f3089a",
+      "name": "Split Out2"
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        5296,
+        2496
+      ],
+      "id": "38c11fbe-2a1a-48eb-bd15-90e89e81ee39",
+      "name": "Limit1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "feed content"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        5488,
+        2496
+      ],
+      "id": "ab014517-ad46-4cd3-a020-f3559b750c44",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "wanted_dates",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        2496
+      ],
+      "id": "8480f155-8c25-4790-88b6-cb027a34b7ec",
+      "name": "Split Out3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0d7cee64-47e0-4991-ab22-4144cbd6c339",
+              "name": "wanted_dates",
+              "value": "={{ $json.wanted_dates }}",
+              "type": "string"
+            },
+            {
+              "id": "45a08925-efe6-41e5-b693-fa9a4d9d2a1f",
+              "name": "ticker",
+              "value": "={{ $('Workflow Input Trigger').item.json.ticker }}",
+              "type": "string"
+            },
+            {
+              "id": "bf78ec03-e587-4a76-9c51-aee8e30355ec",
+              "name": "apikey",
+              "value": "YOUR API KEY",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3760,
+        2496
+      ],
+      "id": "3bb1b65d-f4ca-41a3-b490-82aea72686c5",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ---------- Entradas ----------\nconst nuevos = $json.articulos ?? [];   // lote actual\n\n// ---------- Deduplicar internos ----------\nconst vistos = new Set();\nconst finales = nuevos.filter(a => {\n  const t = (a.title ?? '').trim().toLowerCase();\n  if (!t) return false;\n  if (vistos.has(t)) return false;  // ya apareció en el lote\n  vistos.add(t);\n  return true;\n});\n\n// ---------- Salida ----------\nreturn [{ json: {\n  ticker          : $json.ticker,\n  nuevosTotales   : nuevos.length,\n  finalesTotales  : finales.length,\n  finales         : finales             // artículos únicos\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4640,
+        2496
+      ],
+      "id": "1f0c515f-a873-4e6a-aba1-98e43cddd0dc",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3997e8c2-3739-40b1-85c2-b7090a85e7d4",
+              "name": "feed content",
+              "value": "={{ $json.title }}: {{ $json.summary }}\nSENTIMENT :{{ $json.ticker_sentiment[0].ticker_sentiment_label }}\nPublished : {{ $json.time_published }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5072,
+        2496
+      ],
+      "id": "c84f014e-ef4c-4ab1-9e46-0a1ba87c95f3",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "content": "# Trend analysis",
+        "height": 792,
+        "width": 2384,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        2192
+      ],
+      "typeVersion": 1,
+      "id": "2aa11b53-a730-41c4-8b03-7f467ba73264",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "210f343c-8525-474e-a082-b83f7d504c86",
+              "name": "report",
+              "value": "={{ $('MAIN AGENT').item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4784,
+        -400
+      ],
+      "id": "89f05ff7-aa8f-404b-bbc5-96289fc3effe",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        6288,
+        48
+      ],
+      "id": "e23f2ef4-bd3c-4ad5-8cbd-43e3305ac757",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Alpaca paper trading logs",
+          "mode": "list",
+          "cachedResultName": "Alpaca paper trading logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "client_order_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('client_order_id', ``, 'string') }}",
+            "spent": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('spent', ``, 'number') }}",
+            "objective": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('objective', ``, 'string') }}",
+            "created_at": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('created_at', ``, 'string') }}",
+            "Symbol": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Symbol', ``, 'string') }}",
+            "side": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('side', ``, 'string') }}",
+            "PnL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('PnL', ``, 'string') }}",
+            "qty": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('qty', ``, 'number') }}",
+            "entry_price": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('entry_price', ``, 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "client_order_id",
+              "displayName": "client_order_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spent",
+              "displayName": "spent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objective",
+              "displayName": "objective",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Symbol",
+              "displayName": "Symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "side",
+              "displayName": "side",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PnL",
+              "displayName": "PnL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "qty",
+              "displayName": "qty",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "entry_price",
+              "displayName": "entry_price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        6304,
+        240
+      ],
+      "id": "e711c273-cb77-47df-acd6-61e412a87e72",
+      "name": "save order info",
+      "credentials": {
+        "postgres": {
+          "id": "44lwBYXMr6Vx0Fmq",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Creating resources (submit order, create watchlist)",
+        "method": "POST",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "YOUR KEY"
+            },
+            {
+              "name": "APCA-API-SECRET-KEY",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('JSON', ``, 'json') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        6128,
+        240
+      ],
+      "id": "bf4c5f32-c827-465a-9784-8967538093ce",
+      "name": "POST endpoints"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Any read-only call (account, assets, orders list, position detail, clock, etc.)",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "YOUR KEY"
+            },
+            {
+              "name": "APCA-API-SECRET-KEY",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Name', ``, 'string') }}",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        5984,
+        240
+      ],
+      "id": "7a150f47-8f7a-42cd-8289-ba1ec58b832b",
+      "name": "GET endpoints"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "=# TRADING CONTEXT: you will recieve live advice on the best buy position on stocks, your role is to make ONE buy on the best stock on the report that comes in the prompt.\n\n# ALPACA PAPER TRADING AGENT\n\nYou are a trading execution agent for Alpaca Paper Trading API. Execute orders based on input signals with strict risk management and structured responses.\n\n## AUTHENTICATION & BASE CONFIG\n```\nBase URL: https://paper-api.alpaca.markets\n```\n#Always send the full url, to make the request, e.g: https://paper-api.alpaca.markets/v2/account\n\n## CORE FUNCTIONS\n\n### Log the PnL in the database based on the price when buying and the current price, take a strategic decision based on the query\n\n### BUY EXECUTION WORKFLOW\n1. **PRE-CHECKS (MANDATORY)**\n   - `GET /v2/account` → Verify buying_power > order_cost, account not restricted\n   - `GET /v2/assets/{symbol}` → Confirm status=\"active\" and tradable=true\n   \n2. **ORDER SUBMISSION**\n   ```\n   POST /v2/orders\n   Required: symbol, qty|notional, side=\"buy\", type, time_in_force\n   Types: market|limit|stop|stop_limit|trailing_stop\n   TIF: day|gtc|opg|cls|ioc|fok\n   ```\n   \n3. **RISK CONTROLS (when applicable)**\n  POST /v2/orders\n{\n  \"symbol\": \"XYZ\",\n  \"qty\": 100,\n  \"side\": \"buy\",\n  \"type\": \"market\",\n  \"time_in_force\": \"day\",\n  \"order_class\": \"bracket\",\n  \"take_profit\": { \"limit_price\": 52.00 },\n  \"stop_loss\": { \"stop_price\": 48.50, \"limit_price\": 48.40 }\n}\n   \n4. **POST-SUBMISSION**: Store **client_order_id**, amount spent trade objective(short term risk, long term, low risk, etc), when the order was submited, the Symbol bought, the side. **All this in the postgres table you can acces as a tool**\n\n### SELL EXECUTION WORKFLOW\n1. **POSITION CHECK**: `GET /v2/positions/{symbol}` → Verify qty and market_value\n2. **LIQUIDATION OPTIONS**:\n   - Full: `DELETE /v2/positions/{symbol}`\n   - Partial: `DELETE /v2/positions/{symbol}?qty={shares}`\n   - Custom: `POST /v2/orders` with side=\"sell\"\n3. **POST-SALE**: Update P&L, buying power, audit logs\n\n### ORDER MANAGEMENT\n- Status: `GET /v2/orders/{id}`\n- Replace: `PATCH /v2/orders/{id}`\n- Cancel: `DELETE /v2/orders/{id}` | `DELETE /v2/orders` (all)\n- Monitor states: new → accepted → filled | canceled | rejected\n\n## OPERATIONAL REQUIREMENTS\n- **Market Hours**: Check `GET /v2/clock` before orders\n- **Price Validation**: Use market data API for limit price sanity checks  \n- **Rate Limits**: Max 200 req/min, implement backoff\n- **Logging**: Every API call/response for audit trail\n- **Real-time Updates**: Use WebSocket stream for order fills\n\n## INPUT PROCESSING\n- Accept stock symbols from n8n variables\n- Process buy/sell signals as boolean flags\n- Handle quantity as shares OR dollar notional amount\n- Support order type specifications (default: market orders)\n\n## ERROR HANDLING PRIORITIES\n1. **Critical**: insufficient_funds, account_restricted → STOP\n2. **Validation**: invalid_symbol, market_closed → SKIP with log\n3. **Transient**: network_timeout, rate_limit → RETRY with backoff\n4. **Order**: rejected, expired → LOG and report to workflow\n\n## QUICK REFERENCE ENDPOINTS\n```\nAccount: /v2/account\nAssets: /v2/assets/{symbol}\nOrders: /v2/orders (POST/GET/PATCH/DELETE)\nPositions: /v2/positions/{symbol} (GET/DELETE)\nMarket: /v2/clock, /v2/calendar\n```\n**Output**, Output only: \"succes\" or \"fail\"\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        5888,
+        -48
+      ],
+      "id": "7ace5097-67aa-41a5-b0b8-d17f0ce23966",
+      "name": "Trader Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.report }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "=You are a Strategy Agent.  \nYour job: read each incoming signal report, fetch current account buying power and past trades, then decide on **one** clear MINI REPORT for the Trader Agent in plain text.\n\nTools you must call:\n- **GetAccount** → returns { cash: number } (IMPORTANT)\n- **GetTrades**  → returns list of past trades with fields (symbol, qty, pnl) (IMPORTANT)\n- **think** to think about the investing strategy\n-**calculator** to execute arithmetic relted to percentages, stocks, etc\n\nInvestment Strategy (allocation by risk–reward buckets):\n\nMaximum Security: 15% of cash\n\nBalanced Growth: 20% of cash\n\nHigh-Risk, High-Gain: 15% of cash\n\nOpportunistic Breakout: 10% of cash\n\nReserve / Cash Buffer: 40% of cash\n\n-also diversify based on the industry\n\nPredefined rules:\n2. **Risk limit**: never allocate more than 10% of total assets(cash + active trades) in a single buy/stock.  \n3. **No repeat losses**: skip symbols whose cumulative pnl < 0.  \n4. **One action**: either BUY or SKIP.  \n\nOrder types:\n- **Market (default):** in general cases, execute immediately with a market order.  \n- **Limit / Stop-Limit / Bracket:** when certain conditions apply (e.g. avoid slippage, entry at a breakout price, or set a stop-loss/take-profit). ** Important for high risk- reward stocks**\n  - If you choose a limit or bracket, append parameters after the main instruction.  \n\n\nDecision rules:\n1. Identify candidate symbols from the incoming report.  \n2. For each candidate, fetch current price.  \n3. Exclude any symbol already held (via GetTrades).\n4. Based on the Current PnL and the strategic moment decide to make a sell or not\n\n**Output format** (multi-line mini-report with all the thought process with the exact amount of stocks to buy and sell):\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        5056,
+        -48
+      ],
+      "id": "d7706650-3a00-4526-ad0e-8033dd70d1f5",
+      "name": "strategy agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Get the account cash",
+        "url": "=https://paper-api.alpaca.markets/v2/account",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "YOUR KEY"
+            },
+            {
+              "name": "APCA-API-SECRET-KEY",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        5184,
+        224
+      ],
+      "id": "0d201d53-4361-431b-8b80-b27aa592d3ed",
+      "name": "GET cash"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        5488,
+        192
+      ],
+      "id": "0be1aad4-fb05-4aec-be9f-488ab1bd03d2",
+      "name": "Think1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        5584,
+        192
+      ],
+      "id": "55c70679-e261-4e70-b9e5-6e2d2e06038b",
+      "name": "Calculator1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "daysInterval": 4,
+              "triggerAtHour": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        3472,
+        -576
+      ],
+      "id": "95dbabc0-fa50-4128-8f30-c26411d84256",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3792,
+        176
+      ],
+      "id": "987d0a72-1ca7-4980-8e57-15f07dae9f88",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1t22HwKbMlWsWxcJ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Get the account cash",
+        "url": "=https://paper-api.alpaca.markets/v2/account",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "YOUR KEY"
+            },
+            {
+              "name": "APCA-API-SECRET-KEY",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        4000,
+        304
+      ],
+      "id": "509fd9db-3b4c-4e09-8915-3390e2320e6d",
+      "name": "GET cash1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Strategy Agent that knows wich type of stock you have to analyse.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Prompt__User_Message_', ``, 'string') }}",
+        "options": {
+          "systemMessage": "=# You are a Strategy Agent.  \n\n## Your job: read the already made and the strategy to follow to find the best type of stock we are seeking, **Your response has to be descriptive on the type of stock you want without extending a lot** \n\ne.g: We need a low risk stock from the tech industry for the long term\n\n# Tools you **must** call:\n- **GetAccount** → returns { cash: number } (IMPORTANT)\n- **GetTrades**  → returns list of past trades with fields (symbol, qty, pnl)\n- **think** to think about the investing strategy\n\n\nInvestment Strategy (allocation by risk–reward buckets):\n\nMaximum Security: 15% of cash\n\nBalanced Growth: 20% of cash\n\nHigh-Risk, High-Gain: 15% of cash\n\nOpportunistic Breakout: 10% of cash\n\nReserve / Cash Buffer: 40% of cash\n\n-also diversify based on the industry\n\nPredefined rules:\n2. **Risk limit**: never allocate more than 10% of total assets(cash + active trades) in a single buy/stock.  \n3. **No repeat losses**: skip symbols whose cumulative pnl < 0.\n\n\n# **Output**: d'ont output the whole strategy, output a type of stock based on the strategy and the already made trades, and the symbols that we d'ont want to analyze because are current trades\n \n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 2.2,
+      "position": [
+        3888,
+        16
+      ],
+      "id": "5a915595-09bd-40d2-aa02-b9b6ba11b42b",
+      "name": "Strategy Agent"
+    },
+    {
+      "parameters": {
+        "description": "Use the tool to think about how the investement strategy can follow up considering the current trades"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1,
+      "position": [
+        4128,
+        304
+      ],
+      "id": "07a954f8-2cde-425f-a4b0-40a4759c7e52",
+      "name": "Think3"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.7-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        5824,
+        192
+      ],
+      "id": "58d855db-c657-4727-882e-8d715d75a998",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1t22HwKbMlWsWxcJ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-sonnet-4",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        4960,
+        208
+      ],
+      "id": "c5afcf43-7a4b-4c10-93ab-50969380fe69",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1t22HwKbMlWsWxcJ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://paper-api.alpaca.markets/v2/account",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "APCA-API-KEY-ID",
+              "value": "YOUR KEY"
+            },
+            {
+              "name": "APCA-API-SECRET-KEY",
+              "value": "YOUR KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3712,
+        -576
+      ],
+      "id": "b8b4ff24-19c0-4c1b-aa69-7e586cf68385",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2de927ce-18ce-4765-bc26-464c79345428",
+              "leftValue": "={{ $json.cash }}",
+              "rightValue": 5000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        3840,
+        -576
+      ],
+      "id": "9f1c6671-449d-406a-b2c1-e64f0221aaab",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "sendTo": "paul@taskmorphr.com",
+        "subject": "New Report!",
+        "message": "={{ $json.data }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4784,
+        -672
+      ],
+      "id": "ef6ac2c7-2e16-4d66-9bdd-80179782c6c0",
+      "name": "Send report",
+      "webhookId": "f6586c17-da23-454b-adad-6d02fc79ec4b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zDJ58xrpmivGPuAW",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## setup danelfin api",
+        "height": 176,
+        "width": 336,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4448,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "940e1d3d-07ca-4e6d-b53f-d754d1bb2031",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Load a pdf with the following information\n\nhttps://docs.google.com/document/d/1wxnTMb4ZwBq1X25QXkvh49WhWz3-DYT2IdbEa8K6opw/edit?usp=sharing\n\nhttps://docs.google.com/document/d/1U6pkrK6sIXuQ9plLHum6puTVVEv-p6ZvP0NGqKlSS5s/edit?usp=sharing",
+        "height": 272,
+        "width": 416
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3280,
+        624
+      ],
+      "typeVersion": 1,
+      "id": "c77bca96-fe13-47bf-955e-fcbd1ff740e0",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "### Replace Alphavantage API Key",
+        "height": 80,
+        "width": 160,
+        "color": 3
+      },
+      "id": "0ca0adb2-351f-493f-b89d-0da1cbc1e281",
+      "name": "Sticky Note16",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3728,
+        2640
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### Replace Chart-img API Key",
+        "height": 80,
+        "width": 160,
+        "color": 3
+      },
+      "id": "570db4ea-fa8c-4d86-ba67-4427ac848e0b",
+      "name": "Sticky Note17",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4176,
+        1456
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### Replace TwelveData API Key",
+        "height": 80,
+        "width": 160,
+        "color": 3
+      },
+      "id": "bb745934-b4e3-4aec-8ac3-42a5d5d18a7f",
+      "name": "Sticky Note19",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3264,
+        1712
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Enough cash ?",
+        "height": 240
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3696,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "7e5fb3c0-cb09-4551-be81-0e4aadd07039",
+      "name": "Sticky Note18"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ticker = {{ $json.Ticker }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Overview\nYou are an AI agent specialized in stock analysis. You provide technical analysis and sentiment for stock investments by combining chart data and news sentiment.\n\nInstructions\nWhen a user requests an analysis of a stock with its symbol:\n\nSend the stock symbol to both tools technical_analysis and trends_analysis\n\nAnalyze the combined data and prepare a JSON report with your insights\n\nProvide a clear recommendation (positive, neutral, or negative)\n\nWrite the Date value in each article: \"topArticles\" only in this format: \"DD/MM/YYYY\".\n\nUpdate the technicalAnalysis value as a detailed technical analysis of three paragraphs, which explains even to those who don't understand economics what you did and how you reached your conclusions. Touch on all the indicators examined (Volume, EMA, RSI, Fibonacci retracement, MACD, Bollinger bands, Resistance and support levels)\n\nEnsure that the text in the technicalAnalysis value is written in proper English, like a professional analyst. Use the think tool\n\nIn the Recommendation - recommend to buy or sell only if you think with high probability that there will be a rise or fall. Use the think tool to verify your Recommendation based on recommendationText. Advise something only if you really believe it. Your default is the \"Recommend to wait\" \n\n## Tools\n- **technical_analysis**: Generates technical analysis based on stock charts\n- **trends_analysis**: Analyzes news sentiment for the requested stock\n\n## Response Format\nRespond assemblig both data from the two analysis, the response has to be very descriptive and include all the data you recieve + a further analysis\n"
+        }
+      },
+      "id": "3ee52a9a-9165-403f-85d7-7e4d00f2441d",
+      "name": "Trend + Technical Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        4848,
+        688
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Manage it with the strategy Agent",
+        "options": {
+          "systemMessage": "=# You are an expert of making request to an api that retrieves you financial data, YOU ARE NOT A CHATBOT, YOUR ANSWERS HAVE ALWAYS TO BE CONCLUSIVE\n\n\n# Danelfin REST API Reference\n\n## Authentication\n- Header: `x-api-key: {API_KEY}`\n- Base URL: `https://apirest.danelfin.com`\n\n## Endpoints\n- `/ranking` - GET ticker scores/rankings\n- `/sectors` - GET sector list\n- `/sectors/{slug}` - GET sector history\n- `/industries` - GET industry list  \n- `/industries/{slug}` - GET industry history\n\n## /ranking Parameters\n**Required:** At least one of `ticker` OR `date`\n\n- `date` - YYYY-MM-DD format\n- `ticker` - Symbol (e.g. AAPL)\n- `market` - Exchange filter (NYSE, NASDAQ)\n- `aiscore`, `fundamental`, `technical`, `sentiment`, `low_risk` - Exact score 1-10\n- `*_min` versions - Minimum thresholds 1-10\n- `buy_track_record`, `sell_track_record` - 1/0 boolean\n- `sector` - Sector slug\n- `industry` - Industry slug\n- `asset` - stock/etf\n- `fields` - Comma-separated field list\n\n## Response Formats\n- With ticker: `{date: {scores}}`\n- Without ticker: `{date: {ticker: {scores}}}`\n- Score filter: `{ticker: {scores}}`\n\n## Score Fields\n- `aiscore` - AI Score 1-10\n- `technical` - Technical Score 1-10\n- `fundamental` - Fundamental Score 1-10\n- `sentiment` - Sentiment Score 1-10\n- `low_risk` - Low-Risk Score 1-10\n- `buy_track_record` - Boolean\n- `sell_track_record` - Boolean\n\n## Processing Rules\n1. Parse user intent → extract date, ticker, filters\n2. Validate ticker OR date present (default to today if neither)\n3. Build query string\n4. Send GET request with API key header\n5. Handle errors: 400 = bad params, 403 = auth fail\n6. Convert string scores to integers\n7. Sort by aiscore descending unless specified\n8. Return formatted results\n\n## Query Examples\n- Ticker history: `?ticker=AAPL`\n- Top 100 today: `?date={{ new Date().toISOString().split('T')[0] }}`\n- Score filter: `?date={{ new Date().toISOString().split('T')[0] }}&aiscore=10`\n- Sector filter: `?date={{ new Date().toISOString().split('T')[0] }}&sector=utilities&low_risk_min=5`\n\n## Error Codes\n- 200: Success\n- 400: Bad request - fix params\n- 403: Auth failed - abort\n\n## The http tool gives you acces to all 3 different endpoints\n\n# You have to call the trend + technical analysis tool for the best tickers you choose with danelfin, that will make you decide wich is the actual best stock\n\n## You must call the supabase RAG tool that gives you knowledge of Danelfin technology and strategy\n\n## You must consult the strategy agent to know \n\n## Your current timestamp is {{ $now }}, by default always make queries from yesterday or the previous days where the market was opened. \n\n## If you have an error by consulting a stock scores, d'ont consult the one from the previous year, consult the one from the past day\n\n# Output: You always have to make a full deep report on the type of stock that is indicated by the strategy agent, If yout initial filter from Danelfin Scores still gives you 5+ results choose the 3-4 that based on danelfin scoring and your knowledge can better fit the need of the strategy agent and then call the sub agents for that. **Always output the price per stock on the stock you analyse**\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        4000,
+        -400
+      ],
+      "id": "0d0cd24a-f5d8-4b72-aa4a-80ea67723dbc",
+      "name": "MAIN AGENT"
+    },
+    {
+      "parameters": {
+        "content": "## Set as subworkflow of the MAIN AGENT"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5312,
+        672
+      ],
+      "typeVersion": 1,
+      "id": "3bc3ef43-efc9-4a10-ae70-f2cf85670014",
+      "name": "Sticky Note20"
+    },
+    {
+      "parameters": {
+        "content": "## Set as subworkflow of the Trend + Technical Agent"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3376,
+        1328
+      ],
+      "typeVersion": 1,
+      "id": "5397c448-72b7-46fb-bba4-8e3d444ddec7",
+      "name": "Sticky Note21"
+    },
+    {
+      "parameters": {
+        "content": "## Set as subworkflow of the Trend + Technical Agent"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3408,
+        2288
+      ],
+      "typeVersion": 1,
+      "id": "45ca0495-736a-466a-b21b-67e07fd5ddbf",
+      "name": "Sticky Note22"
+    },
+    {
+      "parameters": {
+        "content": "# Main agent",
+        "height": 1248,
+        "width": 3312,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3264,
+        -736
+      ],
+      "typeVersion": 1,
+      "id": "35b07c50-719b-470e-a9fd-4b04c3aa0ec2",
+      "name": "Sticky Note23"
+    },
+    {
+      "parameters": {
+        "content": "## Send deep report to email",
+        "height": 224,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4528,
+        -752
+      ],
+      "typeVersion": 1,
+      "id": "d70f0afd-9442-46ad-a2e1-f349bdedec3e",
+      "name": "Sticky Note24"
+    },
+    {
+      "parameters": {
+        "content": "## Danelfin knowledge",
+        "height": 368,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3296,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "10ea886f-71c9-4954-9686-9f733c803cdd",
+      "name": "Sticky Note25"
+    },
+    {
+      "parameters": {
+        "content": "## Set up Alpaca api",
+        "height": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5984,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "0c131c1b-3079-42b9-bdcf-810761958eee",
+      "name": "Sticky Note26"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Alpaca paper trading logs",
+          "mode": "list",
+          "cachedResultName": "Alpaca paper trading logs"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        5360,
+        192
+      ],
+      "id": "eca24031-8e29-4283-a718-592817bab433",
+      "name": "current trades",
+      "credentials": {
+        "postgres": {
+          "id": "44lwBYXMr6Vx0Fmq",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Alpaca paper trading logs",
+          "mode": "list",
+          "cachedResultName": "Alpaca paper trading logs"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        4256,
+        304
+      ],
+      "id": "cb757e2b-6e1a-4549-88ba-bbde444d3d65",
+      "name": "current trades1",
+      "credentials": {
+        "postgres": {
+          "id": "44lwBYXMr6Vx0Fmq",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "x-ai/grok-4",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3408,
+        -192
+      ],
+      "id": "15b0fff1-3fb8-4a84-84a7-4324ef45aa6d",
+      "name": "Grok 4",
+      "credentials": {
+        "openRouterApi": {
+          "id": "1t22HwKbMlWsWxcJ",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Call this workflow for a deep technical and trend live analysis",
+        "workflowId": {
+          "__rl": true,
+          "value": "v0QdyPAtwEpMlzcm",
+          "mode": "list",
+          "cachedResultName": "MAIN agent trend+ tech"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticker', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "ticker"
+          ],
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        4416,
+        128
+      ],
+      "id": "bc444494-b186-431e-b08b-e9e5a2a4ebdd",
+      "name": "Call trend + technical Agent"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        4592,
+        -672
+      ],
+      "id": "65ed8ac4-e122-4660-a7ee-7255769e7ff6",
+      "name": "Markdown to HTML"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-20250514",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        5072,
+        224
+      ],
+      "id": "f99c1f3d-edf5-4682-902d-e73fdcf21727",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "k6Lnp9bVLzT5z85i",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Deep Report on Opportunistic Breakout Stocks\n\n## Executive Summary\nBased on the guidance from the Strategy Agent, the focus is on identifying an **opportunistic breakout stock** with moderate to high risk and significant potential for short-term gains, while ensuring diversification by avoiding healthcare and utilities sectors. Opportunistic breakout stocks are characterized by high AI Scores (indicating strong probability of market-beating performance over the next 3 months), elevated technical scores (suggesting upward momentum and breakout potential), moderate to high risk (low \"low_risk\" score in Danelfin, implying volatility for high-reward opportunities), and a positive buy track record. Using Danelfin API data from 2025-07-31, I filtered stocks across key sectors (information-technology, consumer-discretionary, industrials, energy, and communication-services) for AI Score ≥8, Technical Score ≥7, Low Risk Score ≤6, and Buy Track Record = true.\n\nThe initial filter yielded over 50 qualifying stocks. I narrowed it to the top 4 based on highest AI Score (all 10), technical score priority (for breakout potential), risk-reward profile (lower low_risk for higher risk), sector diversity, and exclusion of current holdings (e.g., WM, TKO). The selected stocks are:\n- **SE** (Sea Limited, Communication Services)\n- **CRWD** (CrowdStrike Holdings, Information Technology)\n- **CPRT** (Copart Inc., Industrials)\n- **DPZ** (Domino's Pizza, Consumer Discretionary)\n\nThese were further evaluated using trend and technical analysis tools. All show potential but are in consolidation or neutral phases, recommending a \"wait\" stance for clear breakout confirmation. Based on combined Danelfin scores and technical insights, **SE emerges as the actual best stock** for an opportunistic breakout due to its superior technical momentum (Danelfin Technical Score 10, upward EMA slope), high risk-reward (Low Risk Score 5), and neutral-to-bullish signals. It fits the strategy perfectly for short-term gains in a non-healthcare/utility sector.\n\nThis report provides a deep dive into Danelfin scoring context (via Supabase RAG), stock-specific analysis, prices, risks, and final recommendation. All prices are current as of the latest analysis (2025-08-01).\n\n## Danelfin Technology and Strategy Context\nFrom Supabase RAG query on Danelfin: Danelfin uses Explainable AI to score stocks 1-10 based on over 10,000 features, predicting market-beating potential over 3 months. Higher AI Scores (7-10) signal buy opportunities with higher odds of alpha. The \"Best Stocks\" strategy targets top AI Scores, Buy Track Record, and balanced Low Risk (≥5 for some safety, but lower for riskier plays). For opportunistic breakouts, we emphasize:\n- **AI Score**: 8-10 for high outperformance probability.\n- **Technical Score**: High (≥7) for trend strength and breakout signals.\n- **Low Risk Score**: ≤6 for moderate-high risk (volatility enables short-term gains).\n- **Buy Track Record**: True, indicating historical success in high-score periods.\n- Integration with technical analysis confirms real-time trends (e.g., EMA, RSI, Fibonacci).\n\nThis aligns with the Strategy Agent's need for diversification and high-gain potential.\n\n## Selected Stocks Analysis\nBelow is a detailed breakdown of each stock, integrating Danelfin scores (from 2025-07-31), technical/trend analysis, current price, and fit for opportunistic breakout. I converted all string scores to integers for processing and sorted initially by AI Score descending, then Technical descending.\n\n### 1. SE (Sea Limited) - Communication Services Sector\n- **Danelfin Scores**: AI Score: 10, Technical: 10, Fundamental: 9, Sentiment: 9, Low Risk: 5, Buy Track Record: True.\n- **Current Price**: $154.26 per share.\n- **Technical and Trend Analysis**: SE is in a modestly bullish trend with upward EMA slope, indicating potential upward momentum. RSI at 56.74 is neutral, avoiding overbought risks. Key Fibonacci resistance at $154.79 is being tested, with strong support between $139-$160. Candlestick patterns (e.g., Bullish Engulfing, Three White Soldiers) suggest bullish continuation if volume increases. Volume trend is dry, but broader sentiment is neutral. Overall, this positions SE for a potential breakout above $160, fitting opportunistic high-risk/high-gain profile.\n- **Risk and Opportunity**: Moderate-high risk (Low Risk 5) with significant short-term gain potential if it breaks resistance. Bearish factors include testing psychological barriers; bullish include constructive patterns.\n- **Fit for Strategy**: Excellent – highest technical score signals strong breakout odds, diversified from current holdings.\n\n### 2. CRWD (CrowdStrike Holdings) - Information Technology Sector\n- **Danelfin Scores**: AI Score: 10, Technical: 8, Fundamental: 9, Sentiment: 7, Low Risk: 5, Buy Track Record: True.\n- **Current Price**: $446.60 per share.\n- **Technical and Trend Analysis**: Positive EMA slope suggests underlying bullishness, but bearish candlesticks (Evening Star, Bearish Engulfing) indicate short-term pressure. RSI at 53.18 is neutral with slight bearish divergence. Fibonacci supports at $387.26-$435.70; resistances at $366.36-$384.95. Sentiment is neutral from articles on options trading and market declines. In a delicate balance, suitable for breakout if cybersecurity catalysts emerge.\n- **Risk and Opportunity**: High risk (Low Risk 5) with volatility from bearish patterns; potential catalysts include earnings or sector news.\n- **Fit for Strategy**: Strong – high AI Score and risk profile, but mixed signals make it less immediate than SE for breakout.\n\n### 3. CPRT (Copart Inc.) - Industrials Sector\n- **Danelfin Scores**: AI Score: 10, Technical: 9, Fundamental: 9, Sentiment: 8, Low Risk: 6, Buy Track Record: True.\n- **Current Price**: $45.51 per share.\n- **Technical and Trend Analysis**: Downward EMA slope signals bearish momentum, with RSI at 33.40 nearing oversold (potential bounce). Fibonacci supports at $45.33-$49.70; resistances at $46.83-$59.83. Bollinger Bands tightening near lower band indicates upcoming volatility. Candlestick (Three Black Crows) is bearish, with long lower wicks suggesting buyer interest at lows. Trend channel $45-$65; overall downtrend but stabilization possible.\n- **Risk and Opportunity**: Moderate risk (Low Risk 6) with downside pressure; opportunity for rebound if oversold conditions trigger.\n- **Fit for Strategy**: Good – high scores, but current downtrend reduces breakout immediacy compared to SE.\n\n### 4. DPZ (Domino's Pizza) - Consumer Discretionary Sector\n- **Danelfin Scores**: AI Score: 10, Technical: 8, Fundamental: 8, Sentiment: 8, Low Risk: 6, Buy Track Record: True.\n- **Current Price**: $466.16 per share.\n- **Technical and Trend Analysis**: Flat EMA indicates consolidation in a $430-$500 channel. RSI at 51.19 is neutral; Fibonacci levels at $461.16 (support) and $477.15 (resistance). Bollinger Bands show moderate volatility (upper $484.24, lower $453.86). Bearish Engulfing pattern suggests short-term pressure, but volume spike hints at interest. Somewhat-bullish sentiment from historical 15.28% annual returns.\n- **Risk and Opportunity**: Moderate risk (Low Risk 6) with consolidation; strong historical performance supports long-term gains, but needs breakout confirmation.\n- **Fit for Strategy**: Solid – balanced scores, but flat trend makes it less \"breakout-ready\" than SE.\n\n## Comparative Evaluation and Decision\n- **Scoring Summary** (AI/Technical/Low Risk): SE (10/10/5), CRWD (10/8/5), CPRT (10/9/6), DPZ (10/8/6).\n- **Breakout Potential**: SE leads with the strongest technical momentum and bullish patterns. CRWD shows promise but with bearish risks. CPRT and DPZ are in downtrend/consolidation, requiring more confirmation.\n- **Risk-Reward Fit**: All match moderate-high risk, but SE's lower Low Risk (5) offers higher potential gains aligned with the strategy.\n- **Actual Best Stock**: **SE** is the top choice for opportunistic breakout. It best fits the Strategy Agent's criteria: high short-term gain potential in communication-services (diversified), with Danelfin predicting strong outperformance and technicals indicating upward breakout odds.\n\n## Final Recommendation\nAdd **SE** to the portfolio for opportunistic breakout exposure, targeting short-term gains (monitor for breakout above $160). Hold off on CRWD, CPRT, and DPZ until clearer signals (e.g., RSI shifts or volume confirmation). This maintains diversification and aligns with Danelfin's 3-month alpha strategy. Reassess post any market catalysts. Total portfolio risk remains balanced with existing holdings.",
+        "height": 1856,
+        "width": 1600,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7184,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "c2ff3b7f-6e2b-44d8-bc5c-df77a70f7805",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# Example of the deep reports recieved in your inbox + message for the next Agents ",
+        "width": 1600,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        7184,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "590a77b2-8c06-4c73-afaf-a0ec0c02170b",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Workflow Description and Setup Guide\n\nThis comprehensive workflow integrates advanced analytical tools for detailed technical analysis, trend evaluation, and automated trading based on AI-driven strategies, leveraging APIs from Danelfin, Alpaca, TwelveData, Chart-img, Alpha Vantage, and Supabase.\n\n---\n\n## Overview\n\nThis workflow automates stock selection and trading utilizing:\n\n* **AI-driven scoring and ranking** (Danelfin)\n* **Technical and trend analysis** (TwelveData, Chart-img, Alpha Vantage)\n* **Automated trading execution** (Alpaca)\n* **Vector-based storage and retrieval** (Supabase)\n\n---\n\n## Key Components and API Integrations\n\n### 1. Danelfin API\n\nDanelfin provides AI-driven stock scores and rankings.\n\n* **Endpoints:**\n\n  * `/ranking`: Stock rankings and scores\n  * `/sectors`: Sector information\n  * `/industries`: Industry details\n\n* **Documentation:** [Danelfin API](https://danelfin.com/docs/api)\n\n### 2. Alpaca Paper Trading API\n\nExecute and manage trades.\n\n* **Key Functions:**\n\n  * Order execution\n  * Account management\n  * Trade and position tracking\n\n* **Documentation:** [Alpaca API Docs](https://docs.alpaca.markets/)\n\n### 3. TwelveData API\n\nTechnical analysis indicators such as Bollinger Bands, MACD, and historical pricing.\n\n* **Endpoints:**\n\n  * `/time_series`\n  * `/bbands`\n  * `/macd`\n\n* **Documentation:** [TwelveData API Docs](https://twelvedata.com/docs)\n\n### 4. Chart-img API\n\nGenerate candlestick chart images.\n\n* **Endpoints:**\n\n  * `/tradingview/advanced-chart/storage`\n\n* **Documentation:** [Chart-img API Docs](https://chart-img.com/api/)\n\n### 5. Alpha Vantage API\n\nProvides news sentiment analysis.\n\n* **Endpoint:**\n\n  * `/NEWS_SENTIMENT`\n\n* **Documentation:** [Alpha Vantage API Docs](https://www.alphavantage.co/documentation/)\n\n### 6. Supabase Vector Store\n\nVector embedding storage and quick data retrieval.\n\n* **Documentation:** [Supabase API Docs](https://supabase.com/docs)\n\n---\n\n## Workflow Steps\n\n### Initialization\n\n1. **Scheduled Trigger**: Executes every 4 days.\n\n2. **Cash Availability Check**: Verifies Alpaca account balance.\n\n### Stock Analysis and Selection\n\n3. **MAIN AGENT**: Filters stocks based on Danelfin scores.\n\n4. **Strategy Agent**: Determines investment type considering past trades from Alpaca.\n\n### Deep Analysis\n\n5. **Technical and Trend Analysis**:\n\n   * **Technical Analysis**: Indicators and charts via TwelveData and Chart-img.\n   * **Trend Analysis**: Sentiment analysis from Alpha Vantage.\n\n6. **Supabase Vector Store**: Stores analytical data.\n\n### Trade Execution\n\n7. **Trader Agent**: Executes trades using Alpaca based on analysis and strategic recommendations.\n\n8. **Logging and Reporting**: Stores trade data in PostgreSQL and sends reports via email.\n\n---\n\n## Setup Instructions\n\n### Prerequisites\n\n* Obtain API Keys:\n\n  * [Danelfin](https://docs.google.com/document/d/1U6pkrK6sIXuQ9plLHum6puTVVEv-p6ZvP0NGqKlSS5s/edit)\n  * [Alpaca](https://alpaca.markets/docs/trading-on-alpaca/paper-trading/)\n  * [TwelveData](https://twelvedata.com/apikey)\n  * [Chart-img](https://chart-img.com/api/)\n  * [Alpha Vantage](https://www.alphavantage.co/support/#api-key)\n  * [Supabase](https://supabase.com/)\n\n### Configuration Steps\n\n1. **Set API Keys**:\n\n   * Enter keys in respective nodes:\n\n     * TwelveData API Key\n     * Alpha Vantage API Key\n     * Chart-img API Key\n     * Danelfin API Auth Header\n\n2. **Alpaca API Credentials**:\n\n   * Configure headers: `APCA-API-KEY-ID`, `APCA-API-SECRET-KEY`\n\n3. **Supabase Configuration**:\n\n   * API credentials and database setup for vector storage.\n\n4. **PostgreSQL Setup**:\n\n   * Create tables to log trade data.\n\n### Running the Workflow\n\n* Initiate manually or via scheduled trigger.\n* Monitor using email reports and PostgreSQL logs.\n\n---\n\n## Workflow Maintenance\n\n* Regularly inspect logs and reports.\n* Adjust strategies or thresholds as necessary.\n* Periodically update API keys and credentials.\n\n---\n\nThis setup ensures a robust, automated, and data-driven trading system optimized through AI analytics.\n",
+        "height": 3904,
+        "width": 1536,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1552,
+        -736
+      ],
+      "typeVersion": 1,
+      "id": "b2ffa16f-bbc0-4a9e-a995-f76ad820c6c0",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## Need a tailor-made workflow? Tell me about your business and get a free proposal:\n\n**[Start here → Custom Automation Form](https://taskmorphr.com/contact)**\n\n---\n## 📈 Cost-Savings Snapshot  \nCurious what automation could save you?  \nRun the 60-second calculator:\n\n**[ROI / Cost Comparison](https://taskmorphr.com/cost-comparison)**\n\n---\n### ✉️ Reach me directly  \n`paul@taskmorphr.com`",
+        "height": 560,
+        "width": 576,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5792,
+        576
+      ],
+      "typeVersion": 1,
+      "id": "840134d4-5abf-45f1-bb35-ec56154f9713",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "### 🛠️ Build it yourself  \nBrowse every ready-made workflow:  \n[Full Template Pack — coming soon](https://n8n.io/creators/diagopl/)\n",
+        "height": 128,
+        "width": 224,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        6096,
+        960
+      ],
+      "typeVersion": 1,
+      "id": "25972584-a17c-4aa3-ac46-54c1d6c1b64f",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "# Deep Report on High AI Score Stocks for Market-Beating Potential\n\nBased on the Danelfin technology and strategy (retrieved from the Supabase RAG tool), the core investment approach focuses on selecting stocks with high AI Scores (1-10 scale), where scores of 7+ indicate a strong probability of outperforming the market over the next 3 months. The AI analyzes over 10,000 features daily, incorporating 600+ technical, 150 fundamental, and 150 sentiment indicators. The strategy emphasizes building a diversified portfolio with an average AI Score of at least 7, using scores to decide additions, holds, or discards. Historical backtesting shows impressive returns (e.g., +263% from 2017 for top AI-scored stocks).\n\nSince the Strategy Agent tool encountered parsing errors and could not provide a specific type, I defaulted to Danelfin's primary strategy: **High AI Score Stocks** (specifically AI Score = 10, the highest tier, for maximum outperformance odds). Using the Danelfin ranking endpoint, I queried for stocks with AI Score = 10 on 2025-07-25 (the most recent open market day prior to the current timestamp of 2025-07-26). This yielded over 50 results. To narrow down, I selected 4 stocks with balanced high sub-scores (technical, fundamental, sentiment, low_risk) and diversity across sectors (e.g., tech/e-commerce, services, retail):\n\n- **SE** (Sea Limited - E-commerce/Tech): AI Score 10, Technical 9, Fundamental 10, Sentiment 10, Low Risk 5\n- **DASH** (DoorDash - Food Delivery/Services): AI Score 10, Technical 9, Fundamental 10, Sentiment 8, Low Risk 5\n- **WM** (Waste Management - Waste Services): AI Score 10, Technical 10, Fundamental 7, Sentiment 10, Low Risk 7\n- **WMT** (Walmart - Retail): AI Score 10, Technical 8, Fundamental 6, Sentiment 8, Low Risk 7\n\nThese were chosen for their top-tier AI Scores, strong sentiment/technical ratings, and relatively higher low-risk scores (e.g., WM and WMT at 7 for stability). I then performed deep technical and trend analysis on each using the Call_n8n_Workflow_Tool to evaluate current trends, prices, and recommendations. This helps confirm fit for Danelfin's 3-month outperformance strategy.\n\n## Detailed Analysis of Selected Stocks\n\n### 1. SE (Sea Limited)\n- **Danelfin Scores (2025-07-25)**: AI 10 (very high outperformance odds), Technical 9 (strong momentum), Fundamental 10 (excellent financials), Sentiment 10 (positive news flow), Low Risk 5 (moderate volatility).\n- **Current Price**: $157.71 (as of 2025-07-26).\n- **Technical and Trend Analysis**:\n  - **Trend**: Strong overall uptrend but recent pullback below the EMA with an evening star candlestick pattern signaling potential reversal. RSI at 58.73 (neutral) shows bearish divergence, but MACD is positive at 0.98. Price near upper Bollinger Band ($167.11) and trend channel ($175), with support at $153.40 – indicates possible overbought but poised for upward reversal if support holds.\n  - **Key Indicators**: Fibonacci levels suggest resistance at $170.40 (100%) but support at $141.05 (61.8%). Volume spiked, EMA slope upward. No major bearish factors.\n  - **Sentiment/Articles**: Neutral to somewhat-bullish (e.g., \"Investors Heavily Search Sea Limited\" on 2025-07-25; \"SE Laps the Stock Market\" on 2025-07-23).\n  - **Recommendation**: Buy. The positive MACD and proximity to support outweigh the pullback, aligning with Danelfin's high AI Score for 3-month gains. Fits strategy for growth-oriented tech stocks with strong fundamentals.\n- **Investment Fit**: Excellent for aggressive portfolios; high sentiment and fundamental scores suggest resilience in e-commerce sector.\n\n### 2. DASH (DoorDash)\n- **Danelfin Scores (2025-07-25)**: AI 10, Technical 9, Fundamental 10, Sentiment 8, Low Risk 5.\n- **Current Price**: $249.92 (as of 2025-07-26).\n- **Technical and Trend Analysis**:\n  - **Trend**: Strong uptrend with higher highs, supported by 9-week EMA (steep upward slope). Bullish engulfing candlestick. However, RSI overbought, price above upper Bollinger Band (suggesting overextension), and close to Fibonacci 100% resistance – potential for correction.\n  - **Key Indicators**: MACD positive (signal/histogram N/A). Bearish factors: Overbought conditions and resistance proximity.\n  - **Sentiment/Articles**: Limited data in response, but overall negative trends due to bearish indicators.\n  - **Recommendation**: Wait. Despite the uptrend, overbought signals risk a pullback, which could undermine short-term gains. Monitor for clearer entry.\n- **Investment Fit**: Strong fundamentals make it a good long-term hold per Danelfin, but current overbought state suggests caution for immediate 3-month strategy.\n\n### 3. WM (Waste Management)\n- **Danelfin Scores (2025-07-25)**: AI 10, Technical 10, Fundamental 7, Sentiment 10, Low Risk 7.\n- **Current Price**: $229.67 (as of 2025-07-26).\n- **Technical and Trend Analysis**:\n  - **Trend**: Bullish bounce off EMA support, with bullish engulfing pattern. RSI at 52.75 (neutral), EMA slope upward. Near upper Bollinger Band ($230.60) and approaching Fibonacci 0.786 resistance ($233.21) – cautiously positive but watch for resistance.\n  - **Key Indicators**: MACD slightly negative (-0.75). Support at $227.47; normal volume, upward trend channel ($210-$245).\n  - **Sentiment/Articles**: Neutral (e.g., \"Shares Trading Higher\" from 2023; \"Potentially Oversold\" from 2023; Q2 2024 earnings beat EPS but missed revenue).\n  - **Recommendation**: Wait. Mixed signals with resistance nearby; earnings beat is positive, but insider selling and revenue miss add caution.\n- **Investment Fit**: High low-risk score makes it suitable for defensive portfolios in Danelfin's strategy, but current juncture suggests holding off for confirmation.\n\n### 4. WMT (Walmart)\n- **Danelfin Scores (2025-07-25)**: AI 10, Technical 8, Fundamental 6, Sentiment 8, Low Risk 7.\n- **Current Price**: $97.47 (as of 2025-07-26).\n- **Technical and Trend Analysis**:\n  - **Trend**: Consolidating below $100 after uptrend; flat EMA, neutral RSI (55.9) with no divergence. Bullish engulfing and inside bar candlesticks, long upper wick. Close to support (1.58% away) and Fibonacci 61.8% ($96.16).\n  - **Key Indicators**: MACD -0.13 (signal/histogram N/A). Bollinger Bands: Within range (upper $99.16, lower $93.79). Bearish factor: Close to resistance (0.79%).\n  - **Sentiment/Articles**: Bullish to neutral (e.g., \"$1000 Invested 10 Years Ago Worth Much Today\" on 2025-07-25; \"Walmart's Bold AI Overhaul\" on 2025-07-25).\n  - **Recommendation**: Positive (buy/hold). Bullish factors outweigh minor resistance; AI enhancements and long-term outperformance align with stability.\n- **Investment Fit**: Ideal for low-risk, diversified Danelfin portfolios; retail sector strength via AI integration.\n\n## Overall Recommendation and Best Stock Selection\nAll four stocks align with Danelfin's high AI Score strategy for potential market-beating returns over 3 months, with balanced portfolios favoring scores ≥7. Based on combined Danelfin scores and technical/trend analysis:\n- **Best Overall**: **SE** ($157.71/share). It has the strongest \"Buy\" recommendation, balanced high sub-scores (especially fundamental and sentiment at 10), and technical indicators pointing to upward reversal. This makes it the top pick for growth-oriented outperformance.\n- **Runner-Ups**: WMT ($97.47/share) for stability (positive reco, high low-risk), and WM ($229.67/share) for defensive plays if resistance breaks. Avoid DASH ($249.92/share) immediately due to overbought risks.\n- **Portfolio Suggestion**: Allocate 40% to SE, 30% to WMT, 30% to WM for diversification (average AI Score 10, low-risk ~6.3). Monitor for AI Score changes via Danelfin alerts.\n- **Risks**: Market volatility could impact short-term trends; use low-risk filters for safer plays.\n- **Conclusion**: These high AI Score stocks offer excellent odds per Danelfin's AI-driven strategy. SE stands out as the actual best for immediate investment based on analysis. Always verify latest data.",
+        "height": 1856,
+        "width": 1216,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        8784,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "43c48684-b4de-4546-b2f5-cfdfb2d89482",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "### You can add other alternatives for the first scoring method: newsletters, other websites ranking, etc"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2624,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "4fc5e034-d2d4-42f9-aecd-ad5ed5e09cc2",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "content": "# Deep Investment Report: Balanced Growth Stocks in Semiconductor Capital Equipment and Compute-Infrastructure Enablers\n\n## Executive Summary\nBased on the guidance from the Strategy Agent, this report focuses on **balanced growth opportunities in large/mid-cap semiconductor capital equipment or compute-infrastructure enablers**. Key criteria include strong free cash flow (FCF), net cash/low leverage, recurring service revenue, diversified customers, and direct exposure to AI/datacenter capex (e.g., High Bandwidth Memory (HBM), advanced packaging, testing). The target investment horizon is 12–24 months, with position sizing at ~20% of cash (~$6,300) while staying under 10% of total assets. This adds diversification to the Information Technology sector, avoiding current holdings (ATO, WM, TKO, GERN, SE, NFLX).\n\nUsing Danelfin AI scoring (consulted for 2025-08-08, the most recent open market day), I filtered for stocks with AI Score ≥7 (minimum for positive alpha odds per Danelfin strategy). Danelfin analyzes over 10,000 features daily per stock, combining 600+ technical, 150+ fundamental, and 150+ sentiment indicators to predict 3-month market-beating probability (higher score = higher odds; historical backtest +263% since 2017). From candidates, 5 stocks met the threshold: ASML (8), LRCX (7), ENTG (7), MU (7), AVGO (7). I narrowed to the top 4 based on AI Score, sub-scores (prioritizing technical/fundamental strength, low_risk ≥5 where possible), and fit to criteria: **ASML, AVGO, LRCX, ENTG**.\n\nFor deeper analysis, I consulted the trend and technical analysis tool for live insights (as of 2025-08-10). All show short-term caution (\"Wait\" recommendations due to consolidation/overbought conditions), but align with balanced growth for the longer horizon. **The actual best stock is AVGO**, due to its highest combined bullish sentiment, strong AI exposure, and robust fundamentals despite short-term overbought signals. It best fits the strategy for diversified, recurring-revenue AI enablers with low leverage. Recommended allocation: ~$6,300 at current price of $304.97/share (≈20 shares, under 10% portfolio). Hold for 12–24 months, monitoring Danelfin scores quarterly.\n\n## Danelfin Scoring and Strategy Insights\nDanelfin's AI Score (1-10) is predictive for 3-month outperformance, with scores ≥7 recommended for portfolio inclusion to maintain alpha odds. Sub-scores break down as:\n- **Technical**: Momentum, RSI, MACD, etc.\n- **Fundamental**: FCF, leverage, revenue quality.\n- **Sentiment**: News, analyst views.\n- **Low Risk**: Volatility, downside protection.\n\nStrategy: Aim for diversified portfolio with average AI Score ≥7. Use for add/hold decisions over 3 months, but align with 12–24 month horizon here. Historical data shows AI-powered selections outperform (e.g., +263% vs. market).\n\n## Selected Stocks Analysis\nI selected these 4 from the 5+ results as they best match the criteria (large/mid-cap, strong FCF/low leverage, recurring revenue >20-30%, diversified global customers like TSMC/Intel/Samsung, AI/datacenter exposure via HBM/packaging/testing). Excluded MU (low_risk=4, higher leverage). Sorted by AI Score descending, then technical strength. Prices are current as of 2025-08-10.\n\n### 1. ASML Holding N.V. (ASML) - AI Score: 8 (Top Pick for Equipment Monopoly)\n   - **Danelfin Scores (2025-08-08)**: AI=8, Technical=5, Fundamental=10, Sentiment=9, Low Risk=5 (Integers converted; sorted desc by AI).\n   - **Fit to Strategy**: Premier semiconductor capital equipment provider (EUV lithography for advanced chips). Strong FCF ($5B+ annual), net cash position (low leverage), ~25% recurring service revenue, diversified customers (90% of global chip production relies on ASML). Direct AI exposure: Enables HBM/advanced packaging for AI datacenters (e.g., NVIDIA chips). Market cap ~$290B (large-cap), balanced growth via tech dominance.\n   - **Current Price per Share**: $722.32.\n   - **Technical & Trend Analysis**: Neutral momentum (RSI=48.04, flat EMA), consolidation near Fibonacci 50-61.8% levels (709.20-736.06). Moderate volatility (Bollinger middle band $725.60), volume spike signals interest. Sentiment: Somewhat-Bullish articles on potential stock split and bargain valuation for 2025+. Risk: Low-moderate volatility, limited downside (supports at $726.30-$732.49). Recommendation: Wait for breakout; suits 12-24 month hold.\n   - **Why It Fits**: Highest AI Score, perfect fundamental (10), monopoly in lithography for AI capex. Best for low-risk diversification.\n\n### 2. Broadcom Inc. (AVGO) - AI Score: 7 (Overall Best Stock)\n   - **Danelfin Scores (2025-08-08)**: AI=7, Technical=8, Fundamental=7, Sentiment=9, Low Risk=5.\n   - **Fit to Strategy**: Compute-infrastructure enabler (AI accelerators, networking chips). Exceptional FCF ($18B+ annual), low leverage (net debt/EBITDA <2x), ~40% recurring revenue from software/subscriptions post-acquisitions (e.g., VMware). Diversified customers (Apple, hyperscalers like Google/Microsoft). Direct AI/datacenter exposure: Leaders in HBM interfaces and AI networking silicon. Market cap ~$1.4T (large-cap), balanced growth via AI boom.\n   - **Current Price per Share**: $304.97.\n   - **Technical & Trend Analysis**: Strong bullish momentum (steep upward EMA, RSI=75.34 overbought), near 100% Fibonacci resistance ($304.97). High volatility (upper Bollinger $307.81), \"three white soldiers\" pattern but long wick suggests pullback. Sentiment: Overall Bullish (articles on dividends, semiconductor performance, AI demand; neutral on new products). Risk: Moderate upside/downside; overbought signals caution. Recommendation: Wait for pullback; strong long-term.\n   - **Why It Fits**: Strong technical (8), bullish sentiment, superior AI enabler fit with recurring revenue. **Selected as the actual best** for highest growth potential in 12-24 months (AI networking demand).\n\n### 3. Lam Research Corp. (LRCX) - AI Score: 7\n   - **Danelfin Scores (2025-08-08)**: AI=7, Technical=7, Fundamental=9, Sentiment=9, Low Risk=5.\n   - **Fit to Strategy**: Semiconductor capital equipment (etch/deposition for advanced packaging). Robust FCF ($4B+ annual), net cash (low leverage), ~30% recurring service revenue. Diversified customers (memory/logic makers for AI chips). Direct AI exposure: Enables HBM/testing for datacenter capex. Market cap ~$130B (large-cap), balanced growth profile.\n   - **Current Price per Share**: $101.75.\n   - **Technical & Trend Analysis**: Positive momentum (upward EMA, RSI=65.78 near overbought), near 100% Fibonacci resistance (85.45, but price at 101.75 indicates extension). Moderate volatility (upper Bollinger $102.58), positive MACD (0.83). No recent articles, but supports at 74.51-81.57 limit downside. Risk: Short-term consolidation; proximity to resistance. Recommendation: Wait for confirmation.\n   - **Why It Fits**: High fundamental (9), solid AI packaging exposure. Good for balanced portfolio addition.\n\n### 4. Entegris Inc. (ENTG) - AI Score: 7\n   - **Danelfin Scores (2025-08-08)**: AI=7, Technical=9, Fundamental=7, Sentiment=7, Low Risk=5.\n   - **Fit to Strategy**: Semi equipment/materials (advanced packaging/testing solutions). Strong FCF ($500M+ annual), low leverage, ~20% recurring revenue from consumables. Diversified customers (global foundries for AI chips). Direct AI exposure: Critical for HBM/packaging in datacenters. Market cap ~$11B (mid-cap), growth-oriented with balance.\n   - **Current Price per Share**: $73.14.\n   - **Technical & Trend Analysis**: Downward trend (descending EMA, RSI=40.07 oversold), bearish patterns (engulfing, reversal). Volume spike suggests potential reversal, Fibonacci supports at 62.92-74.15. No recent articles. Risk: High downside if trend continues; supports at 97.23-106.13. Recommendation: Wait for reversal signals.\n   - **Why It Fits**: High technical (9), fits packaging/testing niche, but weakest short-term trend.\n\n## Conclusion and Recommendation\nAmong the analyzed stocks, all align with the balanced growth strategy, offering AI/datacenter exposure, strong FCF/low leverage, and recurring revenue. However, short-term technicals suggest waiting for better entry points (consolidation/overbought). For the 12–24 month horizon, **AVGO stands out as the actual best stock** due to its bullish sentiment, strong technical momentum, and leadership in compute-infrastructure (AI networking/HBM), complemented by a solid Danelfin score of 7 and positive news flow. Buy ~20 shares at $304.97 (~$6,100, within limits) for core IT diversification. Monitor Danelfin scores; re-evaluate if AI Score drops below 7. If market pulls back, consider adding ASML (highest score) next. This positions the portfolio for AI-driven growth with managed risk.",
+        "height": 1856,
+        "width": 1424,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5760,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "03f48cd1-1a0c-4a00-9675-c2a0f6f344b0",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "content": "## Set your tranding strategy for both strategy Agents in the system message",
+        "height": 192,
+        "width": 512
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3776,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "052228cc-ba57-4e54-aa2a-a0d30eddd391",
+      "name": "Sticky Note14"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ranking": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sectors": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "industries": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Technical Analysis Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trend + Technical Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trends Analysis Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trend + Technical Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think2": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trend + Technical Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Trend + Technical Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Trend + Technical Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Chart": {
+      "main": [
+        [
+          {
+            "node": "First Technical Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chart URL": {
+      "main": [
+        [
+          {
+            "node": "Download Chart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Price History": {
+      "main": [
+        [
+          {
+            "node": "Calculate Support Resistance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Bollinger Bands": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get MACD": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Organizing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Support Resistance": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Organizing Data": {
+      "main": [
+        [
+          {
+            "node": "Merge-2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge-2": {
+      "main": [
+        [
+          {
+            "node": "Warp as JSON for GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variable": {
+      "main": [
+        [
+          {
+            "node": "Merge-2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Warp as JSON for GPT": {
+      "main": [
+        [
+          {
+            "node": "Set Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Stock Symbol and API Key": {
+      "main": [
+        [
+          {
+            "node": "Get Price History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Bollinger Bands",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get MACD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "First Technical Analysis": {
+      "main": [
+        [
+          {
+            "node": "Set Variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get Chart URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Variables For API1": {
+      "main": [
+        [
+          {
+            "node": "Split Out3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get News Data1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Get News Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Split Out2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Limit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save order info": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST endpoints": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET endpoints": {
+      "ai_tool": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET cash": {
+      "ai_tool": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "strategy agent": {
+      "main": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator1": {
+      "ai_tool": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Strategy Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET cash1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Strategy Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategy Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think3": {
+      "ai_tool": [
+        [
+          {
+            "node": "Strategy Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Trader Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send report": {
+      "main": [
+        []
+      ]
+    },
+    "MAIN AGENT": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "current trades": {
+      "ai_tool": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "current trades1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Strategy Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grok 4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call trend + technical Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "MAIN AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Send report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "strategy agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "10481806-c2bd-4457-8421-722eae541b42",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e7ccf4281d5afb175c79c02db95b45f15d5b53862cb6bc357c5e5bc26567f35c"
+  },
+  "id": "o3x2FQsw1DfMUfPv",
+  "tags": [
+    {
+      "createdAt": "2025-06-18T21:57:31.264Z",
+      "updatedAt": "2025-06-18T21:57:31.264Z",
+      "id": "GUDz6xsuJ2ZpLTYT",
+      "name": "Built !"
+    },
+    {
+      "createdAt": "2025-06-18T21:56:48.947Z",
+      "updatedAt": "2025-06-18T21:56:48.947Z",
+      "id": "Pk2fJStrBv0ahTzF",
+      "name": "Marketplace"
+    }
+  ]
+}

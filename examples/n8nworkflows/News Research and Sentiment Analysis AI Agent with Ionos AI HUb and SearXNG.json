@@ -1,0 +1,170 @@
+{
+  "name": "News Research and Sentiment Analysis AI Agent with Ionos AI HUb and SearXNG",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3a8dc8ac-01fb-4619-9193-238b44502f6f",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        880,
+        368
+      ],
+      "webhookId": "f5961754-ee99-49c0-819d-a50ce2daa5a6",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "use this tool to find out the current date and time.",
+        "options": {}
+      },
+      "id": "524ce176-1dfd-49ab-9141-ef5f23ac4823",
+      "name": "get_current_date",
+      "type": "n8n-nodes-base.dateTimeTool",
+      "position": [
+        1424,
+        512
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "content": "## **Set up steps**\n\n1.  **Select the Language Model (LLM):** This workflow is pre-configured with Google Gemini. You can select a different model for the agents as needed.\n2.  **Configure LLM Credentials:** Ensure that valid credentials for your chosen LLM are correctly set up within your n8n instance.\n3.  **Set Up the SearXNG Connection:** Configure the node to connect to your self-hosted SearXNG instance. This enables the agent's web search capabilities.\n4.  **Define the Research Agent's Task:** Customize the system prompt for the \"Research Agent\" to define its role, instructions, and how it should conduct its research.\n5.  **Define the Sentiment Analysis Agent's Task:** Adjust the system prompt for the \"Sentiment Analysis Agent\" to specify how it should analyze the information provided by the Research Agent.\n6.  **Test the Workflow:** Use the built-in chat interface in the n8n canvas to send a message and verify that the agents are functioning correctly.",
+        "height": 520,
+        "width": 380
+      },
+      "id": "4cb25891-5df9-4949-b46c-116b17918148",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openai/gpt-oss-120b",
+          "mode": "list",
+          "cachedResultName": "openai/gpt-oss-120b"
+        },
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        576
+      ],
+      "id": "992e8269-6960-4281-9136-358fc5979a0e",
+      "name": "IONOS AI HUB",
+      "credentials": {
+        "openAiApi": {
+          "id": "uewCLbhyvltdQhYg",
+          "name": "Ionos AI Testing Acc"
+        }
+      },
+      "notes": "meta-llama/Llama-3.3-70B-Instruct\n"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "categories": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Categories', ``, 'string') }}",
+        "singleResponse": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_Single_Response', ``, 'boolean') }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-searxng.searxngTool",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        544
+      ],
+      "id": "a58b84c8-ba46-476f-9432-ba4ea150aa0c",
+      "name": "Searxng",
+      "credentials": {
+        "searxngApi": {
+          "id": "zlc1KB8rOFrI5bFq",
+          "name": "Searxng account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1104,
+        336
+      ],
+      "id": "616e1522-2449-413b-b195-ce6cc5ddc95d",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "get_current_date": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IONOS AI HUB": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Searxng": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "54e0177b-f767-4967-a0ad-510fda5901f6",
+  "meta": {
+    "templateId": "5286",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4a4feb7bbcd5b134486b4dd3fad3c5e2b75b04efd0fc96ed1b63b3db4269b229"
+  },
+  "id": "LVQxxpnf6RgtZMKu",
+  "tags": []
+}

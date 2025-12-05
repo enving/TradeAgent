@@ -1,0 +1,54 @@
+[project]
+name = "trade-agent"
+version = "0.1.0"
+description = "Intelligent Paper Trading System with deterministic strategies"
+authors = [{name = "TradeAgent Team"}]
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "pandas>=2.0.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "pandas_ta>=0.3.14b0",
+    "alpaca-py>=0.9.0",
+    "supabase>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "black>=23.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]  # Line too long (handled by formatter)
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'

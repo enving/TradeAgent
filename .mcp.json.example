@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=YOUR_PROJECT_REF"
+    },
+    "context7": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "mcp/context7"
+      ]
+    },
+    "alpaca-docker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "ALPACA_API_KEY=YOUR_ALPACA_API_KEY",
+        "-e",
+        "ALPACA_SECRET_KEY=YOUR_ALPACA_SECRET_KEY",
+        "-e",
+        "ALPACA_PAPER_TRADE=True",
+        "mcp/alpaca:latest"
+      ]
+    }
+  }
+}

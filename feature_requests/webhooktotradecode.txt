@@ -1,0 +1,3 @@
+für alert signale: schnell kaufen, schnell verkaufen!
+
+einfach um den code zu triggern im normalen betrieb.. sodass vllt news webhook zb reuters ein kleines Sprachmodell triggert und das entscheiden lässt was grob passieren soll sl nächsts ob eine analyse gefahren wird oder direkt verkauft wird zb
