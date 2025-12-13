@@ -21,7 +21,7 @@
 
 ### 🛡️ **Risk Management**
 - **Portfolio Correlation Monitor**: Blocks over-concentrated positions (max 40% per sector)
-- **Dynamic Position Sizing**: 10% max position size with Kelly Criterion support
+- **Dynamic Position Sizing**: Kelly Criterion with half-Kelly safety (3-15% per position)
 - **Circuit Breakers**: -3% daily loss limit, automatic trading halt
 - **Stop-Loss & Take-Profit**: Bracket orders on all momentum entries
 
@@ -45,7 +45,7 @@
 
 1. **Clone the repository**
 \`\`\`bash
-git clone https://github.com/YOUR_USERNAME/TradeAgent.git
+git clone https://github.com/enving/TradeAgent.git
 cd TradeAgent
 \`\`\`
 

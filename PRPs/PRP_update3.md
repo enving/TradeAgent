@@ -33,7 +33,7 @@ TradeAgent has evolved into a **production-ready hybrid AI trading system** with
 
 ## 🎯 IMPLEMENTATION PROGRESS
 
-**Last Updated:** 2025-12-04
+**Last Updated:** 2025-12-13
 
 ### ✅ Completed Features
 
@@ -196,6 +196,98 @@ signals = await tracker.generate_sentiment_signals(
 - Earlier entry on breakouts (catches inflection points)
 - Faster exits on reversals (detects negative momentum)
 - Reduced false positives (filters volatile sentiment)
+
+---
+
+#### Priority 2.2: Dynamic Position Sizing (COMPLETED)
+**Status:** ✅ **LIVE** | **Implementation Date:** 2025-12-13 | **Time:** 3 hours
+
+**What Was Built:**
+- **File:** `src/risk/position_sizer.py` (285 lines)
+- **Modified:** `src/core/risk_manager.py` - Integrated Kelly Criterion
+- **Modified:** `src/main.py` - Initialize position sizer with historical data
+
+**Functionality:**
+- **Kelly Criterion Implementation:** Calculates optimal position size based on win rate and risk/reward
+- **Historical Performance Loading:** Loads last 100 trades from Supabase to calculate win rate
+- **Half-Kelly Safety:** Uses 50% of Kelly fraction to reduce volatility
+- **Position Size Constraints:** Min 3%, Max 15% of portfolio per position
+- **Dynamic Scaling:** Adjusts position size based on signal confidence and historical performance
+
+**Formula:**
+```python
+# Kelly Formula: f* = (p * b - q) / b
+# p = win_probability (confidence * win_rate)
+# b = win/loss ratio (take_profit / stop_loss)
+# q = 1 - p (loss probability)
+kelly_fraction = (p * b - q) / b
+adjusted_size = kelly_fraction * 0.5  # Half-Kelly for safety
+```
+
+**Integration:**
+```python
+# In risk_manager.py
+position_sizer = get_position_sizer()
+shares, reasoning = position_sizer.calculate_quantity(signal, portfolio)
+logger.info(f"Dynamic sizing: {shares} shares ({reasoning})")
+```
+
+**Bug Fixes:**
+- Fixed JSON serialization for nested Decimal objects in ML training data
+- Fixed bracket order price precision (rounded to 2 decimals)
+- Fixed fractional shares in bracket orders (rounded to whole shares)
+- Fixed timezone comparison in correlation monitor
+
+**Expected Impact:**
+- +15% capital efficiency through dynamic sizing
+- Better risk management (smaller positions for low-confidence signals)
+- Improved position scaling based on historical performance
+
+---
+
+#### Docker & SystemD Deployment (COMPLETED)
+**Status:** ✅ **READY** | **Implementation Date:** 2025-12-13 | **Time:** 2 hours
+
+**What Was Built:**
+- **File:** `Dockerfile` - Python 3.12 slim container
+- **File:** `docker-compose.yml` - Multi-container orchestration with Ofelia scheduler
+- **File:** `.dockerignore` - Optimized build context
+- **File:** `run_docker.sh` - User-friendly deployment wrapper
+- **File:** `deployment/tradeagent.service` - SystemD service definition
+- **File:** `deployment/tradeagent.timer` - SystemD timer for daily execution
+- **File:** `deployment/install_systemd.sh` - Automated SystemD installation
+- **File:** `deployment/README.md` - Complete deployment guide
+
+**Deployment Options:**
+1. **Docker (Cross-platform):** Runs with Ofelia scheduler at 9:35 AM ET daily
+2. **SystemD (Linux Native):** Native service with timer unit
+3. **Cron (Simple):** Basic cron-based execution
+
+**Docker Features:**
+- Automated daily execution at 9:35 AM ET (14:35 UTC) on weekdays
+- Persistent logs volume-mounted
+- Resource limits (1 CPU, 512MB RAM)
+- Auto-restart on failure
+- Google DNS configuration (bypass Pi-hole)
+
+**Usage:**
+```bash
+# Docker
+./run_docker.sh build     # Build image
+./run_docker.sh once      # Test run
+./run_docker.sh schedule  # Start daily scheduler
+./run_docker.sh logs      # View logs
+./run_docker.sh stop      # Stop scheduler
+
+# SystemD
+sudo ./deployment/install_systemd.sh
+systemctl list-timers tradeagent.timer
+```
+
+**Documentation:**
+- Updated main README.md with Docker deployment section
+- Created comprehensive deployment/README.md with all options
+- Added troubleshooting guide and monitoring commands
 
 ---
 
