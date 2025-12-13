@@ -1,0 +1,33 @@
+# TradeAgent SystemD Service
+# Install to: /etc/systemd/system/tradeagent.service
+# Enable with: sudo systemctl enable tradeagent
+# Start with: sudo systemctl start tradeagent
+
+[Unit]
+Description=TradeAgent Autonomous Trading Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=tristan
+Group=tristan
+WorkingDirectory=/home/tristan/Repos/TradeAgent
+EnvironmentFile=/home/tristan/Repos/TradeAgent/.env
+
+# Use virtual environment Python
+ExecStart=/home/tristan/Repos/TradeAgent/venv_linux/bin/python -m src.main
+
+# Logging
+StandardOutput=append:/home/tristan/Repos/TradeAgent/logs/tradeagent.log
+StandardError=append:/home/tristan/Repos/TradeAgent/logs/tradeagent-error.log
+
+# Restart policy (don't restart - cron/timer handles scheduling)
+Restart=no
+
+# Resource limits
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

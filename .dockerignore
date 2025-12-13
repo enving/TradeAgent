@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+venv_linux/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs (copied to container, but don't need in build context)
+logs/
+*.log
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+
+# Documentation
+PRPs/
+Dokumentation/
+*.md
+!README.md
+
+# Config (will be mounted or passed as env vars)
+.env
+.env.local
+.mcp.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp

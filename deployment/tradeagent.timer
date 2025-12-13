@@ -1,0 +1,20 @@
+# TradeAgent SystemD Timer
+# Install to: /etc/systemd/system/tradeagent.timer
+# Enable with: sudo systemctl enable tradeagent.timer
+# Start with: sudo systemctl start tradeagent.timer
+
+[Unit]
+Description=Run TradeAgent daily at 9:35 AM ET
+Requires=tradeagent.service
+
+[Timer]
+# Run at 9:35 AM ET (14:35 UTC) on weekdays
+# Adjust timezone as needed (systemd uses local time by default)
+OnCalendar=Mon-Fri 09:35:00 America/New_York
+Persistent=true
+
+# Run immediately if we missed a scheduled time (e.g., system was off)
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -540,27 +540,61 @@ class AlertManager:
 
 ---
 
-#### 3.2 **Web Dashboard (Streamlit/React)**
+#### 3.2 **Web Dashboard (Next.js + Claude Analytics)**
+**Status:** 📋 **DOCUMENTED IN PRP 4** → See `/PRPs/PRP_4_WebDashboard.md`
+
 **Problem:** No visual interface. Hard to monitor performance.
 
-**Solution:** Real-time trading dashboard.
+**Solution:** Production-ready Next.js dashboard with Claude-powered analytics.
 
-**Features:**
-- **Portfolio Overview:** Value, P&L, positions
-- **Live Signals:** Incoming signals with reasoning
-- **Performance Charts:** Equity curve, drawdown, Sharpe ratio
-- **News Feed:** Latest articles + LLM sentiment
-- **Trade History:** Searchable table with filters
-- **Strategy Controls:** Enable/disable strategies, adjust allocations
+**✅ Moved to PRP 4 - Full Web Dashboard Platform**
 
-**Tech Stack Options:**
+This priority has been **expanded and documented as standalone PRP 4** which includes:
 
-**Option A: Streamlit (Fast MVP)**
-- ✅ Python-native, easy to build
-- ✅ 2-day implementation
-- ❌ Limited customization
+**Phase 1 - Core Dashboard (8-10h):**
+- ✅ Portfolio Overview (real-time value, positions, P&L)
+- ✅ Trade History (chronological, filterable)
+- ✅ Performance Metrics (Sharpe ratio, returns, comparisons)
+- ✅ Supabase Integration (read from existing DB)
 
-**Option B: React + FastAPI (Production)**
+**Phase 2 - Claude Analytics (6-8h):**
+- ✅ Chat Analyst Interface (natural language queries)
+- ✅ Dynamic Chart Generation (Claude Tool Calling)
+- ✅ Intelligent Insights (risk analysis, performance attribution)
+
+**Phase 3 - Real-Time Features (4-6h):**
+- ✅ Live Portfolio Updates (Supabase Realtime)
+- ✅ Trade Notifications & Alerts
+- ✅ Market Context (news feed, sentiment timeline)
+
+**Tech Stack (Final Decision):**
+- **Frontend:** Next.js 14 + TypeScript + TailwindCSS + Shadcn/ui
+- **Charts:** Recharts (production-ready, responsive)
+- **Backend:** Next.js API Routes + Supabase Client
+- **AI:** Anthropic Claude SDK (tool calling pattern)
+- **Deployment:** Vercel
+
+**Rationale for Next.js over Streamlit/React:**
+- ✅ Modern, production-ready tech stack
+- ✅ Claude tool calling pattern pre-implemented
+- ✅ Monetization-ready architecture
+- ✅ Professional UI (Shadcn/ui components)
+- ✅ Based on proven Anthropic example
+- ✅ Clear separation: Python backend + Next.js frontend
+
+**Reference:** See `/PRPs/PRP_4_WebDashboard.md` for complete documentation
+
+**Implementation Time:** 18-24 hours total (phased approach)
+**Status:** ⏳ NOT STARTED - Documentation complete, awaiting approval
+
+---
+
+**~~Option A: Streamlit (Fast MVP)~~** (DEPRECATED - See PRP 4)
+- ~~Python-native, easy to build~~
+- ~~2-day implementation~~
+- ~~Limited customization~~
+
+**~~Option B: React + FastAPI (Production)~~** (DEPRECATED - See PRP 4)
 - ✅ Full control, professional UI
 - ✅ Mobile-responsive
 - ❌ 2-week implementation
