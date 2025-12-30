@@ -39,8 +39,9 @@ async def create_tables():
         logger.info("The Python SDK doesn't support direct SQL execution.")
         logger.info("Please follow these steps:")
         logger.info("")
+        project_ref = config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"
         logger.info("1. Go to Supabase SQL Editor:")
-        logger.info("   https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/sql")
+        logger.info(f"   https://supabase.com/dashboard/project/{project_ref}/sql")
         logger.info("")
         logger.info("2. Click 'New Query'")
         logger.info("")

@@ -73,7 +73,7 @@ def enable_rls():
     print("\n" + "="*80)
     print("⚠️  IMPORTANT: Supabase Python client cannot execute DDL statements directly.")
     print("   Please execute the SQL script manually in Supabase SQL Editor:")
-    print(f"   1. Open: https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/sql/new")
+    print(f"   1. Open: https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/sql/new")
     print(f"   2. Copy the content from: {sql_file}")
     print("   3. Click 'Run' to execute")
     print("="*80 + "\n")

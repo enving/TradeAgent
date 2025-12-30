@@ -94,4 +94,4 @@ if __name__ == "__main__":
     else:
         logger.error("❌ Migration failed. Please check the logs.")
         logger.info("You may need to run the SQL manually in Supabase SQL Editor:")
-        logger.info("https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/sql/new")
+        logger.info("https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/sql/new")

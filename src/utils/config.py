@@ -18,6 +18,7 @@ class Config:
     # Supabase Configuration
     SUPABASE_URL: str
     SUPABASE_KEY: str
+    SUPABASE_PROJECT_REF: str | None
 
     # Optional Market Data APIs
     TWELVEDATA_API_KEY: str | None
@@ -58,6 +59,7 @@ class Config:
         self.SUPABASE_KEY = self._get_required("SUPABASE_KEY")
 
         # Optional variables
+        self.SUPABASE_PROJECT_REF = os.getenv("SUPABASE_PROJECT_REF")
         self.TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
         self.ALPHA_VANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 

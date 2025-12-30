@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import httpx
 from dotenv import load_dotenv
+from src.utils.config import config
 from src.utils.logger import logger
 
 # Load environment variables
@@ -18,7 +19,7 @@ async def execute_sql_schema():
     """Execute SQL schema via Supabase REST API."""
 
     # Get credentials
-    project_ref = "fwdwdbcirkojdhzvpnsz"
+    project_ref = config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"
     service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     supabase_url = os.getenv("SUPABASE_URL")
 
@@ -84,7 +85,7 @@ async def execute_sql_schema():
     logger.info("")
     logger.info("Best approach: Use Supabase SQL Editor")
     logger.info("")
-    logger.info("1. Go to: https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/sql")
+    logger.info("1. Go to: https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/sql")
     logger.info("2. Click 'New Query'")
     logger.info("3. Copy from: src/database/schema.sql")
     logger.info("4. Click 'RUN'")

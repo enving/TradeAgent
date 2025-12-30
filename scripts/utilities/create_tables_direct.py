@@ -50,7 +50,7 @@ async def create_all_tables():
         logger.info("FASTEST METHOD: Copy/Paste in SQL Editor (30 seconds)")
         logger.info("")
         logger.info("1. Go to SQL Editor:")
-        logger.info(f"   https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/sql")
+        logger.info(f"   https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/sql")
         logger.info("")
         logger.info("2. Click 'New Query'")
         logger.info("")

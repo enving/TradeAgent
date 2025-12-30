@@ -6,6 +6,7 @@ Executes SQL schema via Supabase Management API.
 import asyncio
 import httpx
 from pathlib import Path
+from src.utils.config import config
 from src.utils.logger import logger
 
 
@@ -13,7 +14,10 @@ async def create_tables():
     """Create all database tables via Supabase REST API."""
 
     # Supabase project details
-    project_ref = "fwdwdbcirkojdhzvpnsz"
+    project_ref = config.SUPABASE_PROJECT_REF
+    if not project_ref:
+        logger.error("SUPABASE_PROJECT_REF not set in .env")
+        return
     supabase_url = f"https://{project_ref}.supabase.co"
 
     # Read schema

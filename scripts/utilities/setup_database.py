@@ -54,7 +54,7 @@ async def setup_database():
         logger.info("=" * 60)
         logger.info("IMPORTANT: Supabase tables must be created via SQL Editor")
         logger.info("=" * 60)
-        logger.info("1. Go to: https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/editor")
+        logger.info("1. Go to: https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/editor")
         logger.info("2. Copy the contents of: src/database/schema.sql")
         logger.info("3. Paste into SQL Editor and click 'RUN'")
         logger.info("4. Verify tables created: trades, signals, daily_performance, etc.")

@@ -74,7 +74,7 @@ async def verify_rls():
         print("⚠️  Some issues detected - please check the errors above")
 
     print("\n🔗 Monitor security status:")
-    print("   https://supabase.com/dashboard/project/fwdwdbcirkojdhzvpnsz/reports/database-health")
+    print("   https://supabase.com/dashboard/project/{config.SUPABASE_PROJECT_REF or "YOUR_PROJECT_REF"}/reports/database-health")
 
     return all_ok
 
