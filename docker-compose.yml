@@ -22,12 +22,8 @@ services:
     volumes:
       - ./logs:/app/logs
 
-    # Logging configuration
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    # Run the internal scheduler service
+    command: python -m src.scheduler_service
 
     # Resource limits (optional - adjust as needed)
     deploy:
@@ -39,18 +35,3 @@ services:
           cpus: '0.5'
           memory: 256M
 
-  # Optional: Cron scheduler for daily execution
-  tradeagent-scheduler:
-    image: mcuadros/ofelia:latest
-    container_name: tradeagent-scheduler
-    restart: unless-stopped
-    depends_on:
-      - tradeagent
-    command: daemon --docker
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      # Run at 9:35 AM ET (14:35 UTC) on weekdays
-      ofelia.job-exec.tradeagent.schedule: "0 35 14 * * MON-FRI"
-      ofelia.job-exec.tradeagent.container: "tradeagent-bot"
-      ofelia.job-exec.tradeagent.command: "python -m src.main"

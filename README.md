@@ -119,6 +119,20 @@ python3 test_integration.py
 ./run_docker.sh stop
 \`\`\`
 
+### 🦭 Podman Support (Rootless)
+
+If you prefer Podman (no root privileges required), use `run_podman.sh`:
+
+```bash
+# 1. Build and run once
+./run_podman.sh build
+./run_podman.sh once
+
+# 2. Start scheduler
+./run_podman.sh schedule
+```
+\`\`
+
 ### What You Get
 
 - ✅ **Autonomous operation** - Runs daily at 9:35 AM ET automatically
