@@ -2,6 +2,7 @@
 pandas>=2.0.0
 pydantic>=2.0.0
 python-dotenv>=1.0.0
+pytz>=2023.3
 
 # Trading & Technical Analysis
 ta>=0.11.0

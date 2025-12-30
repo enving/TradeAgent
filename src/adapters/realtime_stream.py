@@ -14,6 +14,7 @@ from typing import Dict, Callable, Any
 from collections import deque
 
 from alpaca.data.live import StockDataStream
+from alpaca.data.enums import DataFeed
 from alpaca.data.models import Bar
 
 from ..utils.config import config
@@ -46,7 +47,7 @@ class RealtimeMarketStream:
         self.stream = StockDataStream(
             api_key=config.ALPACA_API_KEY,
             secret_key=config.ALPACA_SECRET_KEY,
-            feed='iex',  # Use IEX for free tier
+            feed=DataFeed.IEX,  # Use IEX for free tier
         )
 
         # Track recent bars for each ticker (5-minute window)

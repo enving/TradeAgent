@@ -196,6 +196,10 @@ async def check_exit_conditions(
         Tuple of (should_exit, exit_reason)
     """
     try:
+        # Load dynamic parameters
+        params_manager = get_strategy_parameters()
+        params = await params_manager.get_parameters("momentum")
+
         # Get current quote from Alpaca (this works even on free tier)
         quote = await alpaca_client.get_latest_quote(position.symbol)
         current_price = Decimal(str(quote.get("price", quote.get("last", 0))))
@@ -203,12 +207,12 @@ async def check_exit_conditions(
         # Check stop-loss (P&L <= -5%)
         pnl_pct = (current_price - position.avg_entry_price) / position.avg_entry_price
 
-        if pnl_pct <= Decimal(str(-STRATEGY_PARAMS["stop_loss_pct"])):
+        if pnl_pct <= Decimal(str(-params["stop_loss_pct"])):
             logger.info(f"Stop-loss triggered for {position.symbol}: {pnl_pct:.2%}")
             return (True, "stop_loss")
 
         # Check take-profit (P&L >= +15%)
-        if pnl_pct >= Decimal(str(STRATEGY_PARAMS["take_profit_pct"])):
+        if pnl_pct >= Decimal(str(params["take_profit_pct"])):
             logger.info(f"Take-profit triggered for {position.symbol}: {pnl_pct:.2%}")
             return (True, "take_profit")
 
@@ -243,22 +247,25 @@ async def check_exit_conditions(
 def update_strategy_parameters(new_params: dict[str, float]) -> None:
     """Update strategy parameters based on performance analysis.
 
+    DEPRECATED: This function is deprecated and should not be used.
+    Parameters are now managed by StrategyParametersManager.
+
     Called by performance analyzer to adjust parameters.
 
     Args:
         new_params: Dictionary of parameter updates
     """
-    for key, value in new_params.items():
-        if key in STRATEGY_PARAMS:
-            old_value = STRATEGY_PARAMS[key]
-            STRATEGY_PARAMS[key] = value
-            logger.info(f"Parameter updated: {key} = {value} (was {old_value})")
+    logger.warning("update_strategy_parameters is deprecated - parameters are managed by StrategyParametersManager")
 
 
 def get_current_parameters() -> dict[str, float]:
     """Get current strategy parameters.
 
+    DEPRECATED: This function is deprecated and should not be used.
+    Use get_strategy_parameters().get_parameters("momentum") instead.
+
     Returns:
         Dictionary of current parameter values
     """
-    return STRATEGY_PARAMS.copy()
+    logger.warning("get_current_parameters is deprecated - use get_strategy_parameters().get_parameters('momentum')")
+    return DEFAULT_STRATEGY_PARAMS.copy()
