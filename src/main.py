@@ -11,6 +11,7 @@ import asyncio
 from datetime import UTC, datetime
 
 from .adapters.market_data_adapter import get_market_data_adapter
+from .agents.orchestrator import TradingOrchestrator
 from .core.ml_logger import get_ml_logger
 from .core.performance_analyzer import analyze_daily_performance, generate_weekly_report
 from .core.risk_manager import (
@@ -86,6 +87,12 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
         ml_logger = get_ml_logger()
         news_strategy = NewsStrategy()
 
+        # Initialize AI Orchestrator (if LLM features enabled)
+        orchestrator = None
+        if config.ENABLE_LLM_FEATURES:
+            logger.info("Initializing AI Orchestrator...")
+            orchestrator = TradingOrchestrator()
+
         # Initialize position sizer with historical data
         await initialize_position_sizer(supabase)
 
@@ -106,6 +113,17 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
             "orders_executed": 0,
             "positions_closed": 0,
         }
+
+        # 1b. AI Orchestrator: Analyze Market Regime (if enabled)
+        if orchestrator:
+            logger.info("=== AI Orchestrator: Market Regime Analysis ===")
+            regime, confidence, reasoning = await orchestrator.analyze_market_regime(
+                portfolio, positions
+            )
+            logger.info(f"Market Regime: {regime} (confidence: {confidence:.2f})")
+            logger.info(f"Reasoning: {reasoning}")
+            execution_summary["market_regime"] = regime
+            execution_summary["regime_confidence"] = confidence
 
         # 2. Defensive Core: Check rebalancing
         today = datetime.now(UTC).date()
@@ -173,13 +191,29 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
             logger.info("Running News Sentiment Strategy...")
             news_sentiment_strategy = NewsSentimentStrategy()
             news_signals = await news_sentiment_strategy.scan_for_signals(alpaca)
-            
+
             if news_signals:
                 logger.info(f"Found {len(news_signals)} news-driven signals")
                 momentum_signals.extend(news_signals)
                 execution_summary["news_signals"] = len(news_signals)
             else:
                 logger.info("No news-driven signals found")
+
+        # 3c. AI Orchestrator: Prioritize Signals (if enabled)
+        if orchestrator and momentum_signals:
+            logger.info("=== AI Orchestrator: Signal Prioritization ===")
+            prioritized = await orchestrator.prioritize_signals(
+                momentum_signals, portfolio, positions
+            )
+            # Replace signals with prioritized list (sorted by quality)
+            momentum_signals = [signal for signal, score, reasoning in prioritized]
+            logger.info(f"Signals prioritized. Top 3: {[s.ticker for s in momentum_signals[:3]]}")
+
+            # Log top signal reasoning
+            if prioritized:
+                top_signal, top_score, top_reasoning = prioritized[0]
+                logger.info(f"Top signal {top_signal.ticker}: Score={top_score:.2f}")
+                logger.info(f"Reasoning: {top_reasoning}")
 
         # 4. Apply risk filters (includes correlation & sector checks)
         filtered_signals = await filter_signals_by_risk(momentum_signals, portfolio, positions)
@@ -226,6 +260,20 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
                     cash_available=portfolio.cash,
                     trigger_reason="momentum_entry_criteria_met",
                 )
+
+                # AI Orchestrator: Explain Decision (if enabled)
+                if orchestrator:
+                    explanation = await orchestrator.explain_decision(
+                        signal,
+                        approved=True,
+                        factors={
+                            "risk_filter_passed": True,
+                            "position_size": qty,
+                            "portfolio_value": float(portfolio.portfolio_value),
+                            "strategy": signal.strategy,
+                        },
+                    )
+                    logger.info(f"Decision Explanation for {signal.ticker}:\n{explanation}")
 
                 execution_summary["orders_executed"] += 1
 

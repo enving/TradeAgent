@@ -1,5 +1,0 @@
-requests
-ipykernel
-python-dotenv
-openai
-pydantic

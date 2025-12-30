@@ -20,16 +20,16 @@ class TradeExplainer:
     """
 
     def __init__(self):
-        """Initialize OpenRouter client."""
-        if not config.OPENROUTER_API_KEY:
-            logger.warning("OpenRouter API key not configured")
+        """Initialize LLM client with flexible provider support."""
+        if not config.LLM_API_KEY:
+            logger.warning(f"LLM API key not configured (provider: {config.LLM_PROVIDER})")
             self.client = None
         else:
             self.client = AsyncOpenAI(
-                api_key=config.OPENROUTER_API_KEY,
-                base_url=config.OPENROUTER_BASE_URL,
+                api_key=config.LLM_API_KEY,
+                base_url=config.LLM_BASE_URL,
             )
-            logger.info(f"TradeExplainer initialized with model: {config.OPENROUTER_MODEL}")
+            logger.info(f"TradeExplainer initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})")
 
     async def explain_trade(
         self, trade: Trade, portfolio: Portfolio | None = None
@@ -63,9 +63,9 @@ class TradeExplainer:
             # Build context for the LLM
             prompt = self._build_trade_prompt(trade, portfolio)
 
-            # Call OpenRouter API
+            # Call LLM API
             response = await self.client.chat.completions.create(
-                model=config.OPENROUTER_MODEL,
+                model=config.LLM_MODEL,
                 messages=[
                     {
                         "role": "system",

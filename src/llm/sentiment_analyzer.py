@@ -21,14 +21,15 @@ class SentimentAnalyzer:
         else:
             self.news_api = NewsApiClient(api_key=config.NEWS_API_KEY)
 
-        if not config.OPENROUTER_API_KEY:
-            logger.warning("OPENROUTER_API_KEY not set - Sentiment Analysis disabled")
+        if not config.LLM_API_KEY:
+            logger.warning(f"LLM API key not set (provider: {config.LLM_PROVIDER}) - Sentiment Analysis disabled")
             self.llm_client = None
         else:
             self.llm_client = AsyncOpenAI(
-                api_key=config.OPENROUTER_API_KEY,
-                base_url=config.OPENROUTER_BASE_URL
+                api_key=config.LLM_API_KEY,
+                base_url=config.LLM_BASE_URL
             )
+            logger.debug(f"SentimentAnalyzer initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})")
 
     async def analyze_ticker(self, ticker: str) -> dict:
         """Analyze news sentiment for a specific ticker.
@@ -98,7 +99,7 @@ class SentimentAnalyzer:
             """
 
             response = await self.llm_client.chat.completions.create(
-                model=config.OPENROUTER_MODEL,
+                model=config.LLM_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
             )

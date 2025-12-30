@@ -38,11 +38,13 @@ class SentimentEngine:
     """Analyzes news articles to generate market prognosis."""
 
     def __init__(self):
+        """Initialize sentiment engine with flexible LLM provider."""
         self.client = AsyncOpenAI(
-            api_key=config.OPENROUTER_API_KEY,
-            base_url=config.OPENROUTER_BASE_URL,
+            api_key=config.LLM_API_KEY,
+            base_url=config.LLM_BASE_URL,
         )
-        self.model = config.OPENROUTER_MODEL
+        self.model = config.LLM_MODEL
+        logger.debug(f"SentimentEngine initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})")
 
     async def analyze_news(self, ticker: str, articles: List[NewsArticle]) -> Optional[SentimentPrognosis]:
         """Analyze a list of news articles for a specific ticker.
