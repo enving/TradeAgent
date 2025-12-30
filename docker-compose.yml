@@ -22,8 +22,8 @@ services:
     volumes:
       - ./logs:/app/logs
 
-    # Run the internal scheduler service
-    command: python -m src.scheduler_service
+    # Run the event-driven service (scheduler + real-time + RSS)
+    command: python -m src.event_driven_service
 
     # Resource limits (optional - adjust as needed)
     deploy:
