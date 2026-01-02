@@ -31,9 +31,11 @@ Located in `.env` file (NOT committed to git):
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_KEY` - Supabase service/anon key
 
-### LLM Providers
-- `IONOS_API_KEY` - IONOS AI API key
-- `OPENROUTER_API_KEY` - OpenRouter API key (fallback)
+### LLM Providers (Priority Order)
+- `IONOS_API_KEY` - IONOS AI API key (preferred, unlimited)
+- `IONOS_API_URL` - IONOS API endpoint
+- `IONOS_MODEL` - Model: `openai/gpt-oss-120b`
+- `OPENROUTER_API_KEY` - OpenRouter API key (fallback, rate-limited)
 
 ### News APIs
 - `NEWSAPI_KEY` - NewsAPI.org key
@@ -245,14 +247,62 @@ ssh recovery@raspberrypi.local "cd ~/tradeagent && cp .env .env.backup && git re
 4. **Verify API keys** - Check rate limits and validity
 5. **Monitor resource usage** - Pi has limited CPU/RAM
 
+## LLM Configuration
+
+### Provider Priority
+
+The system auto-detects which LLM provider to use based on available API keys:
+
+1. **IONOS (Preferred)** - Unlimited, fast, cost-effective
+   - Requires: `IONOS_API_KEY`, `IONOS_API_URL`, `IONOS_MODEL`
+   - Model: `openai/gpt-oss-120b` (120B parameters)
+
+2. **OpenRouter (Fallback)** - Rate-limited on free tier
+   - Requires: `OPENROUTER_API_KEY`
+   - Model: `anthropic/claude-3.5-sonnet`
+   - Limit: ~500 tokens/day on free tier
+
+### Check Current Provider
+
+```bash
+# On Pi
+ssh recovery@raspberrypi.local
+tail -20 ~/tradeagent/logs/trading.log | grep "Initializing LLM"
+
+# Look for:
+# "Initializing LLM client: provider=ionos" ✅ Using IONOS
+# "Initializing LLM client: provider=openrouter" ⚠️ Using OpenRouter
+```
+
+### Switch LLM Provider
+
+To switch from OpenRouter to IONOS (if you hit rate limits):
+
+```bash
+# Add to Pi's .env (if not already there)
+ssh recovery@raspberrypi.local
+nano ~/tradeagent/.env
+
+# Add these lines:
+IONOS_API_KEY=your_ionos_key_here
+IONOS_API_URL=https://openai.inference.de-txl.ionos.com/v1
+IONOS_MODEL=openai/gpt-oss-120b
+
+# Restart service
+pkill -f 'python.*event_driven'
+cd ~/tradeagent && source venv/bin/activate && nohup python -m src.event_driven_service > logs/service.log 2>&1 &
+```
+
 ## Rate Limits
 
 ### APIs with Free Tier Limits
 - **NewsAPI:** 100 requests/24h (currently rate-limited)
 - **Alpha Vantage:** 25 requests/day (for technical data)
 - **Yahoo Finance:** HTTP 429 errors indicate rate limiting
+- **OpenRouter (Free):** ~500 tokens/day
 
 ### Solutions
+- **Use IONOS LLM** - Unlimited on paid plan
 - Use local caching
 - Reduce polling frequency
 - Switch to paid tiers for production
@@ -260,16 +310,50 @@ ssh recovery@raspberrypi.local "cd ~/tradeagent && cp .env .env.backup && git re
 
 ## Git Workflow
 
+### Standard Development Workflow
+
 ```bash
-# Feature development
-git checkout -b fix/issue-description
-# ... make changes ...
+# 1. Make changes locally
+# Edit files, test locally with:
+source venv/bin/activate
+python -m src.event_driven_service  # Test full service
+# OR test specific components
+
+# 2. Commit and push to GitHub
 git add .
 git commit -m "fix: description of fix"
-git push origin fix/issue-description
+git push origin main
+
+# 3. Raspberry Pi auto-updates within 5 minutes
+# The cron job on Pi runs: scripts/pi_auto_update.sh
+# It will:
+#   - Pull latest code from GitHub
+#   - Restart service if code changed
+#   - Update dependencies if requirements.txt changed
+
+# 4. Monitor deployment
+ssh recovery@raspberrypi.local "tail -f ~/tradeagent/logs/trading.log"
+```
+
+### Feature Branch Workflow (Optional)
+
+```bash
+# For larger features, use branches
+git checkout -b feature/description
+# ... make changes ...
+git add .
+git commit -m "feat: description"
+git push origin feature/description
 # Create PR, review, merge to main
 # Pi auto-updates from main within 5 min
 ```
+
+### Important Notes
+
+- **Never commit .env** - It's in .gitignore and contains API keys
+- **Pi has its own .env** - Located at `/home/recovery/tradeagent/.env`
+- **Auto-update preserves .env** - The update script backs up and restores .env
+- **Public repository** - All code is public, keep secrets in .env only
 
 ## Architecture Notes
 
