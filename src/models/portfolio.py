@@ -42,4 +42,5 @@ class Portfolio(BaseModel):
     portfolio_value: Decimal = Field(description="Total portfolio value", ge=0)
     buying_power: Decimal = Field(description="Available buying power", ge=0)
     equity: Decimal = Field(description="Total equity value", ge=0)
+    last_equity: Decimal = Field(description="Previous day's equity value", ge=0)
     positions: list[Position] = Field(default_factory=list, description="List of open positions")

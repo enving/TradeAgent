@@ -26,11 +26,26 @@ from src.utils.logger import logger
 # Watchlist for real-time monitoring
 MONITORED_TICKERS = [
     # Mega caps
-    "AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMZN", "TSLA",
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "GOOGL",
+    "META",
+    "AMZN",
+    "TSLA",
     # High momentum stocks
-    "AMD", "PLTR", "SNOW", "CRWD", "NET", "DDOG", "SQ",
+    "AMD",
+    "PLTR",
+    "SNOW",
+    "CRWD",
+    "NET",
+    "DDOG",
+    "SQ",
     # Volatility plays
-    "SHOP", "RBLX", "U", "DASH",
+    "SHOP",
+    "RBLX",
+    "U",
+    "DASH",
 ]
 
 
@@ -74,6 +89,18 @@ class EventDrivenTradingService:
         # TODO: Trigger focused scan
         # await daily_trading_loop(focused_ticker=ticker)
 
+    async def _run_heartbeat(self):
+        """Log heartbeat to ensure service is alive."""
+        while self.running:
+            try:
+                logger.info("💓 Event-Driven Service Heartbeat - System Operational")
+                await asyncio.sleep(3600)  # Log every hour
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Heartbeat error: {e}")
+                await asyncio.sleep(60)
+
     async def start(self):
         """Start all monitoring services."""
         logger.info("=" * 70)
@@ -85,6 +112,9 @@ class EventDrivenTradingService:
         # Create tasks for concurrent execution
         tasks = []
 
+        # Task 0: Heartbeat
+        tasks.append(asyncio.create_task(self._run_heartbeat()))
+
         # Task 1: Multi-frequency scheduler
         tasks.append(asyncio.create_task(run_scheduler()))
         logger.info("✅ Multi-frequency scheduler started")
@@ -92,16 +122,14 @@ class EventDrivenTradingService:
         # Task 2: Real-time market monitoring (if enabled)
         if config.ENABLE_LLM_FEATURES:  # Use same flag for now
             self.realtime_stream = RealtimeMarketStream(
-                watchlist=MONITORED_TICKERS,
-                event_callback=self.handle_market_event
+                watchlist=MONITORED_TICKERS, event_callback=self.handle_market_event
             )
             tasks.append(asyncio.create_task(self.realtime_stream.start()))
             logger.info(f"✅ Real-time market stream started ({len(MONITORED_TICKERS)} tickers)")
 
             # Task 3: RSS news monitoring
             self.rss_monitor = RSSFeedMonitor(
-                watchlist=MONITORED_TICKERS,
-                event_callback=self.handle_news_event
+                watchlist=MONITORED_TICKERS, event_callback=self.handle_news_event
             )
             tasks.append(asyncio.create_task(self.rss_monitor.start()))
             logger.info("✅ RSS news monitor started")

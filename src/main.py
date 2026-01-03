@@ -8,6 +8,7 @@ Usage:
 """
 
 import asyncio
+from typing import Any, cast, Literal
 from datetime import UTC, datetime
 
 from .adapters.market_data_adapter import get_market_data_adapter
@@ -17,6 +18,7 @@ from .core.performance_analyzer import analyze_daily_performance, generate_weekl
 from .core.risk_manager import (
     calculate_position_size,
     filter_signals_by_risk,
+    check_daily_loss_limit,
 )
 from .database.supabase_client import SupabaseClient
 from .mcp_clients.alpaca_client import AlpacaMCPClient
@@ -31,7 +33,7 @@ from .utils.config import config
 from .utils.logger import logger
 
 
-async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
+async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
     """Main trading loop - executes all trading logic.
 
     Workflow:
@@ -105,6 +107,22 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
         logger.info(f"Cash: ${portfolio.cash}")
         logger.info(f"Positions: {len(positions)}")
 
+        # 1a. CRITICAL RISK CHECK: Daily Circuit Breaker
+        # Calculate daily PnL (Equity - Last Equity)
+        daily_pnl = portfolio.equity - portfolio.last_equity
+        daily_pnl_pct = daily_pnl / portfolio.last_equity if portfolio.last_equity > 0 else 0
+
+        logger.info(f"Daily PnL: ${daily_pnl:.2f} ({daily_pnl_pct:.2%})")
+
+        if check_daily_loss_limit(daily_pnl, portfolio.portfolio_value):
+            logger.error("🛑 CIRCUIT BREAKER TRIPPED. Halting trading for the day.")
+            return {
+                "status": "halted",
+                "reason": "circuit_breaker",
+                "daily_pnl": float(daily_pnl),
+                "daily_pnl_pct": float(daily_pnl_pct),
+            }
+
         execution_summary = {
             "start_time": datetime.now(UTC),
             "portfolio_value": float(portfolio.portfolio_value),
@@ -139,15 +157,17 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
                     qty = calculate_position_size(signal, portfolio)
 
                     # Submit order
+                    side = cast(Literal["buy", "sell"], signal.action.lower())
                     order_id = await alpaca.submit_market_order(
-                        symbol=signal.ticker, qty=qty, side=signal.action.lower()
+                        symbol=signal.ticker, qty=qty, side=side
                     )
 
                     # Log trade
+                    action = cast(Literal["BUY", "SELL"], signal.action)
                     trade = Trade(
                         date=datetime.now(UTC),
                         ticker=signal.ticker,
-                        action=signal.action,
+                        action=action,
                         quantity=qty,
                         entry_price=signal.entry_price,
                         strategy="defensive",
@@ -303,6 +323,10 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
                     await alpaca.close_position(position.symbol)
 
                     # Log exit
+                    exit_reason = cast(
+                        Literal["stop_loss", "take_profit", "technical_exit", "rebalance"] | None,
+                        reason,
+                    )
                     exit_trade = Trade(
                         date=datetime.now(UTC),
                         ticker=position.symbol,
@@ -310,7 +334,7 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
                         quantity=position.quantity,
                         entry_price=position.avg_entry_price,
                         exit_price=position.current_price,
-                        exit_reason=reason,
+                        exit_reason=exit_reason,
                         pnl=position.unrealized_pnl,
                         pnl_pct=position.unrealized_pnl_pct,
                         strategy="momentum",
@@ -320,8 +344,7 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, any]:
                     execution_summary["positions_closed"] += 1
 
                     logger.info(
-                        f"Position closed: {position.symbol} "
-                        f"(P&L: ${position.unrealized_pnl:.2f})"
+                        f"Position closed: {position.symbol} (P&L: ${position.unrealized_pnl:.2f})"
                     )
 
             except Exception as e:

@@ -7,26 +7,46 @@ Allocates 30% of portfolio to momentum trades (max 5 positions).
 
 from decimal import Decimal
 
-from ..clients.alpha_vantage_client import AlphaVantageClient
 from ..config.strategy_params import get_strategy_parameters
 from ..core.indicators import calculate_macd, calculate_rsi, calculate_sma, calculate_volume_ratio
 from ..mcp_clients.alpaca_client import AlpacaMCPClient
 from ..models.portfolio import Position
 from ..models.trade import Signal
 from ..utils.logger import logger
+import yfinance as yf
 
 # Expanded Universe for Dynamic Selection
 UNIVERSE = [
-    "AAPL", "MSFT", "NVDA", "GOOGL", "META", "TSLA", "AMZN", "AMD", "NFLX", "AVGO",
-    "JPM", "BAC", "WFC", "GS", "MS", # Banks
-    "XOM", "CVX", "COP", # Energy
-    "LLY", "JNJ", "PFE", # Pharma
-    "KO", "PEP", "MCD", # Consumer
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "AMZN",
+    "AMD",
+    "NFLX",
+    "AVGO",
+    "JPM",
+    "BAC",
+    "WFC",
+    "GS",
+    "MS",  # Banks
+    "XOM",
+    "CVX",
+    "COP",  # Energy
+    "LLY",
+    "JNJ",
+    "PFE",  # Pharma
+    "KO",
+    "PEP",
+    "MCD",  # Consumer
 ]
+
 
 def get_dynamic_watchlist() -> list[str]:
     """Select top liquid stocks from universe for momentum scanning.
-    
+
     Returns:
         List of 15 tickers across multiple sectors for diversified opportunity discovery.
         Uses yfinance (unlimited free tier) so no rate limit concerns.
@@ -35,12 +55,23 @@ def get_dynamic_watchlist() -> list[str]:
     # Can scan more stocks without hitting API limits
     # Diversified across sectors: Tech, Growth, Finance, Energy, Healthcare
     return [
-        "AAPL", "MSFT", "NVDA", "GOOGL", "META",  # Tech
-        "TSLA", "AMD", "NFLX", "AVGO",            # Growth
-        "JPM", "BAC",                              # Finance
-        "XOM", "CVX",                              # Energy
-        "LLY", "JNJ"                               # Healthcare
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "GOOGL",
+        "META",  # Tech
+        "TSLA",
+        "AMD",
+        "NFLX",
+        "AVGO",  # Growth
+        "JPM",
+        "BAC",  # Finance
+        "XOM",
+        "CVX",  # Energy
+        "LLY",
+        "JNJ",  # Healthcare
     ]
+
 
 # Strategy parameters (dynamically optimized by AdaptiveOptimizer)
 # These defaults are used if no optimized parameters exist
@@ -75,8 +106,10 @@ async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
     params_manager = get_strategy_parameters()
     params = await params_manager.get_parameters("momentum")
 
-    logger.debug(f"Using momentum parameters: RSI [{params['rsi_lower']}-{params['rsi_upper']}], "
-                 f"MACD > {params['macd_threshold']}, Vol > {params['volume_ratio']}")
+    logger.debug(
+        f"Using momentum parameters: RSI [{params['rsi_lower']}-{params['rsi_upper']}], "
+        f"MACD > {params['macd_threshold']}, Vol > {params['volume_ratio']}"
+    )
 
     # Use yfinance for historical data (Unlimited & Free)
     # Alpha Vantage hit the 25 req/day limit.
@@ -95,11 +128,11 @@ async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
             if bars.empty:
                 logger.warning(f"No data available for {ticker}")
                 continue
-            
+
             # Normalize columns to lowercase for our indicators
             bars.columns = [c.lower() for c in bars.columns]
             # yfinance returns 'Stock Splits' and 'Dividends', we don't need them
-            
+
             # Calculate indicators
             bars["rsi"] = calculate_rsi(bars)
             macd, signal, histogram = calculate_macd(bars)
@@ -125,8 +158,8 @@ async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
             entry_conditions = [
                 params["rsi_lower"] < latest["rsi"] < params["rsi_upper"],
                 latest["histogram"] > params["macd_threshold"],
-                latest["close"] > latest["sma50"],      # Price above long-term trend
-                latest["sma20"] > latest["sma50"],      # Golden Cross alignment
+                latest["close"] > latest["sma50"],  # Price above long-term trend
+                latest["sma20"] > latest["sma50"],  # Golden Cross alignment
                 latest["volume_ratio"] > params["volume_ratio"],
             ]
 
@@ -216,25 +249,33 @@ async def check_exit_conditions(
             logger.info(f"Take-profit triggered for {position.symbol}: {pnl_pct:.2%}")
             return (True, "take_profit")
 
-        # Check technical exit using Alpha Vantage
-        av_client = AlphaVantageClient()
-        bars = await av_client.get_bars(position.symbol, days=60)
-
-        if not bars.empty:
-            bars["rsi"] = calculate_rsi(bars)
-            bars["histogram"] = calculate_macd(bars)[2]
-            bars = bars.dropna()
+        # Check technical exit using yfinance (Unlimited & Free)
+        # Was previously using Alpha Vantage but hitting rate limits
+        try:
+            ticker = yf.Ticker(position.symbol)
+            bars = ticker.history(period="3mo", interval="1d")
 
             if not bars.empty:
-                latest = bars.iloc[-1]
+                # Normalize columns to lowercase
+                bars.columns = [c.lower() for c in bars.columns]
 
-                # Exit if RSI > 75 (overbought) or MACD turns negative
-                if latest["rsi"] > 75 or latest["histogram"] < 0:
-                    logger.info(
-                        f"Technical exit for {position.symbol}: "
-                        f"RSI={latest['rsi']:.1f}, MACD={latest['histogram']:.3f}"
-                    )
-                    return (True, "technical_exit")
+                bars["rsi"] = calculate_rsi(bars)
+                macd, signal, histogram = calculate_macd(bars)
+                bars["histogram"] = histogram
+                bars = bars.dropna()
+
+                if not bars.empty:
+                    latest = bars.iloc[-1]
+
+                    # Exit if RSI > 75 (overbought) or MACD turns negative
+                    if latest["rsi"] > 75 or latest["histogram"] < 0:
+                        logger.info(
+                            f"Technical exit for {position.symbol}: "
+                            f"RSI={latest['rsi']:.1f}, MACD={latest['histogram']:.3f}"
+                        )
+                        return (True, "technical_exit")
+        except Exception as e:
+            logger.error(f"Error checking technical exit for {position.symbol}: {e}")
 
         # No exit condition met
         return (False, None)
@@ -255,7 +296,9 @@ def update_strategy_parameters(new_params: dict[str, float]) -> None:
     Args:
         new_params: Dictionary of parameter updates
     """
-    logger.warning("update_strategy_parameters is deprecated - parameters are managed by StrategyParametersManager")
+    logger.warning(
+        "update_strategy_parameters is deprecated - parameters are managed by StrategyParametersManager"
+    )
 
 
 def get_current_parameters() -> dict[str, float]:
@@ -267,5 +310,7 @@ def get_current_parameters() -> dict[str, float]:
     Returns:
         Dictionary of current parameter values
     """
-    logger.warning("get_current_parameters is deprecated - use get_strategy_parameters().get_parameters('momentum')")
+    logger.warning(
+        "get_current_parameters is deprecated - use get_strategy_parameters().get_parameters('momentum')"
+    )
     return DEFAULT_STRATEGY_PARAMS.copy()

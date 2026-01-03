@@ -83,6 +83,7 @@ class AlpacaMCPClient:
                 portfolio_value=Decimal(str(account.portfolio_value)),
                 buying_power=Decimal(str(account.buying_power)),
                 equity=Decimal(str(account.equity)),
+                last_equity=Decimal(str(account.last_equity)),
             )
 
             logger.debug(f"Portfolio value: ${portfolio.portfolio_value}")

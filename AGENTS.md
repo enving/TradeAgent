@@ -4,19 +4,66 @@ This document contains important information for AI agents working on this proje
 
 ## SSH Access to Raspberry Pi
 
+### For Human Users
+
 **Connection:**
 ```bash
-ssh recovery@raspberrypi.local
+ssh USER@raspberrypi.local
+# Credentials are in .env file (user_name, user_pw)
 ```
-
-**Credentials:**
-- Username: `recovery`
-- Password: `raspberry` (stored in `.env`)
 
 **Project Directory:**
 ```bash
-/home/recovery/tradeagent
+cd /home/USER/tradeagent
 ```
+
+### For AI Agents (Automated SSH)
+
+**Using Paramiko (Python):**
+
+```python
+import paramiko
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Get credentials from .env
+PI_USER = os.getenv("user_name")  # From .env
+PI_PASSWORD = os.getenv("user_pw")  # From .env
+PI_HOST = "raspberrypi.local"
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+try:
+    ssh.connect(
+        PI_HOST,
+        username=PI_USER,
+        password=PI_PASSWORD,
+        look_for_keys=False,
+        allow_agent=False,
+        timeout=10
+    )
+
+    # Execute command
+    stdin, stdout, stderr = ssh.exec_command("cd ~/tradeagent && git status")
+    output = stdout.read().decode('utf-8')
+    print(output)
+
+finally:
+    ssh.close()
+```
+
+**Credentials:** Located in `.env` file (NOT in git):
+- `user_name=<pi_username>`
+- `user_pw=<pi_password>`
+
+**Important Notes:**
+- **No SSH keys** - Uses password authentication (credentials in `.env`)
+- **Hostname:** `raspberrypi.local` (mDNS)
+- **Fallback:** Use IP address if mDNS fails
+- **Project Path:** `/home/<user>/tradeagent`
 
 ## Environment Variables
 
@@ -41,9 +88,9 @@ Located in `.env` file (NOT committed to git):
 - `NEWSAPI_KEY` - NewsAPI.org key
 - `ALPHAVANTAGE_API_KEY` - Alpha Vantage API key
 
-### Raspberry Pi
-- `user_name=recovery`
-- `user_pw=raspberry`
+### Raspberry Pi (SSH Credentials)
+- `user_name` - SSH username
+- `user_pw` - SSH password
 
 ## Critical Bugs Fixed
 
@@ -184,12 +231,40 @@ python -c "from supabase import create_client; import os; from dotenv import loa
 ## Common Issues
 
 ### 1. SSH Connection Fails
+
+**Symptom:** `Permission denied` or `Connection refused`
+
+**Solutions:**
 ```bash
 # Check Pi is reachable
 ping raspberrypi.local
 
-# Try IP address instead
-ssh recovery@192.168.178.69
+# If mDNS doesn't work, find IP address
+# On Pi (via monitor/keyboard):
+hostname -I
+
+# Then connect via IP
+ssh recovery@192.168.x.x
+```
+
+**For Paramiko (Python):**
+```python
+# If you get: "Error reading SSH protocol banner"
+# Reason: Too many concurrent SSH connections
+# Solution: Wait a few seconds and retry, or increase timeout
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+ssh.connect(
+    "raspberrypi.local",
+    username=os.getenv("user_name"),
+    password=os.getenv("user_pw"),
+    timeout=30,  # Increase timeout
+    look_for_keys=False,
+    allow_agent=False
+)
 ```
 
 ### 2. Service Not Running
@@ -409,5 +484,58 @@ ssh recovery@raspberrypi.local "cd ~/tradeagent && git reset --hard HEAD~1"
 
 ---
 
-**Last Updated:** 2025-12-30
+## Quick Status Check
+
+**Check if everything is running:**
+
+```python
+# Quick Python check (for AI agents)
+import paramiko
+from supabase import create_client
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# 1. Check Pi
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(
+    "raspberrypi.local",
+    username=os.getenv("user_name"),
+    password=os.getenv("user_pw"),
+    look_for_keys=False,
+    allow_agent=False
+)
+
+# Service running?
+stdin, stdout, stderr = ssh.exec_command("pgrep -f 'python.*event_driven'")
+pid = stdout.read().decode('utf-8').strip()
+print(f"Pi Service: {'✅ Running' if pid else '❌ Stopped'}")
+
+# Market status?
+stdin, stdout, stderr = ssh.exec_command("tail -5 ~/tradeagent/logs/trading.log | grep -i 'market is'")
+market = stdout.read().decode('utf-8')
+print(f"Market: {market.strip()}")
+
+ssh.close()
+
+# 2. Check Supabase
+client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
+trades = client.table('trades').select('*', count='exact').limit(0).execute()
+print(f"Supabase: ✅ {trades.count} trades logged")
+```
+
+**For humans:**
+```bash
+# Check Pi service (replace USER with username from .env)
+ssh USER@raspberrypi.local "pgrep -f python && echo 'Running' || echo 'Stopped'"
+
+# Check logs
+ssh USER@raspberrypi.local "tail -20 ~/tradeagent/logs/trading.log"
+```
+
+---
+
+**Last Updated:** 2026-01-01
 **Maintainer:** AI Agent / Developer
