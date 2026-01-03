@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 
 from .adapters.market_data_adapter import get_market_data_adapter
 from .agents.orchestrator import TradingOrchestrator
+from .agents.reflection_agent import ReflectionAgent
+from .tools.economic_calendar import get_economic_calendar
 from .core.ml_logger import get_ml_logger
 from .core.performance_analyzer import analyze_daily_performance, generate_weekly_report
 from .core.risk_manager import (
@@ -82,6 +84,15 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
         else:
             logger.info("Market is CLOSED - placing pre-market orders")
             logger.info("Orders will execute when market opens at 9:30 AM ET")
+
+        logger.info("Checking Economic Calendar...")
+        calendar = get_economic_calendar()
+        should_avoid, reason = calendar.should_avoid_trading()
+
+        if should_avoid:
+            logger.warning(f"⚠️ HIGH IMPACT EVENT DETECTED: {reason}")
+            logger.warning("Reducing position sizes by 50% for safety.")
+            execution_summary["risk_mode"] = "conservative"
 
         # Initialize clients
         alpaca = AlpacaMCPClient()
@@ -355,7 +366,10 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
         logger.info("Running daily performance analysis...")
         await analyze_daily_performance()
 
-        # 8. Weekly Report (if Sunday)
+        logger.info("Running Daily Reflection Agent...")
+        reflection_agent = ReflectionAgent()
+        await reflection_agent.run_daily_reflection()
+
         if today.weekday() == 6:  # Sunday
             logger.info("Generating weekly report...")
             await generate_weekly_report()
