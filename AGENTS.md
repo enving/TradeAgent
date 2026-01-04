@@ -539,3 +539,23 @@ ssh USER@raspberrypi.local "tail -20 ~/tradeagent/logs/trading.log"
 
 **Last Updated:** 2026-01-01
 **Maintainer:** AI Agent / Developer
+
+## New System Features (Jan 2026 Update)
+
+### Remote Monitoring via Supabase
+The system now logs internal events directly to Supabase for remote monitoring without SSH:
+- **Table:** `system_logs`
+- **Levels:** `WARNING`, `ERROR`, `CRITICAL` (Info/Debug stay local only)
+- **Manual Check:** See `SUPABASE_DIAGNOSTICS.md` for SQL query examples.
+
+### Advanced Risk Management
+- **Economic Calendar:** Automatically detects high-impact macro events (FOMC, CPI).
+- **Conservative Mode:** Reduces position sizes by 50% during high-risk macro days.
+- **Daily Circuit Breaker:** Halts all trading if the portfolio loses >3% in a single day.
+
+### AI Self-Reflection
+- **Reflection Agent:** Runs at market close to analyze winning/losing patterns.
+- **Lessons Learned:** Generates actionable insights stored in logs to refine strategy parameters over time.
+
+### API Stability
+- **YFinance Integration:** Momentum strategy exit checks now use `yfinance` to avoid Alpha Vantage rate limits (25/day).
