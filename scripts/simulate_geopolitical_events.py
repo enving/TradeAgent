@@ -75,6 +75,32 @@ SCENARIOS = {
         },
         "market_context": "Safe-haven flows into defense and gold; tech under pressure.",
     },
+    "fed_rate_cut": {
+        "description": "Federal Reserve announces unexpected 50bps rate cut to stimulate growth.",
+        "news": {
+            "SPY": [
+                NewsArticle(
+                    title="FED CUTS RATES BY 50BPS: MARKET SURGES ON STIMULUS",
+                    summary="In a surprise move, the Federal Reserve has slashed interest rates by 50 basis points. Chair Powell cited the need to support economic expansion as inflation cools.",
+                    source="Simulation News",
+                    url="https://sim.com/fed-cut",
+                    published_at=datetime.now(timezone.utc),
+                    ticker="SPY",
+                )
+            ],
+            "NVDA": [
+                NewsArticle(
+                    title="TECH SECTOR REJOICES AS BORROWING COSTS PLUMMET",
+                    summary="High-growth tech stocks like NVIDIA are the primary beneficiaries of the Fed's aggressive rate cut. Analysts predict a multi-year bull run in AI infrastructure.",
+                    source="Simulation News",
+                    url="https://sim.com/tech-boom",
+                    published_at=datetime.now(timezone.utc),
+                    ticker="NVDA",
+                )
+            ],
+        },
+        "market_context": "Risk-on sentiment; indices hitting new all-time highs.",
+    },
 }
 
 
@@ -204,6 +230,7 @@ async def main():
 
     await run_simulation("trump_tariffs")
     await run_simulation("taiwan_escalation")
+    await run_simulation("fed_rate_cut")
 
 
 if __name__ == "__main__":

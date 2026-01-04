@@ -85,7 +85,9 @@ DEFAULT_STRATEGY_PARAMS = {
 }
 
 
-async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
+async def scan_for_signals(
+    alpaca_client: AlpacaMCPClient, tickers: list[str] | None = None
+) -> list[Signal]:
     """Scan watchlist for momentum entry signals.
 
     Pure technical analysis - checks 4 criteria:
@@ -96,6 +98,7 @@ async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
 
     Args:
         alpaca_client: Alpaca MCP client for market data (used for quotes only)
+        tickers: Optional list of tickers to scan (overrides dynamic watchlist)
 
     Returns:
         List of buy signals meeting all criteria
@@ -115,7 +118,7 @@ async def scan_for_signals(alpaca_client: AlpacaMCPClient) -> list[Signal]:
     # Alpha Vantage hit the 25 req/day limit.
     import yfinance as yf
 
-    watchlist = get_dynamic_watchlist()
+    watchlist = tickers if tickers else get_dynamic_watchlist()
 
     for ticker in watchlist:
         try:

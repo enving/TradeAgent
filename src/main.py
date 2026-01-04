@@ -35,10 +35,24 @@ from .utils.config import config
 from .utils.logger import logger
 
 
-async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
-    """Main trading loop - executes all trading logic."""
-    logger.info("=== Daily Trading Loop Started ===")
-    logger.info(f"Environment: {config.ENVIRONMENT}")
+_trading_lock = asyncio.Lock()
+
+
+async def daily_trading_loop(
+    allow_premarket: bool = False, focused_ticker: str | None = None
+) -> dict[str, Any]:
+    """Main trading loop - executes all trading logic.
+
+    Args:
+        allow_premarket: Whether to allow trading during pre-market hours
+        focused_ticker: If provided, only scan/trade this specific ticker (reactive mode)
+    """
+    async with _trading_lock:
+        logger.info("=== Daily Trading Loop Started ===")
+        if focused_ticker:
+            logger.info(f"REACTIVE MODE: Focusing on {focused_ticker}")
+        logger.info(f"Environment: {config.ENVIRONMENT}")
+
     logger.info(f"Time: {datetime.now(UTC).isoformat()}")
 
     execution_summary: dict[str, Any] = {
@@ -163,16 +177,36 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
                     logger.error(f"Failed to execute rebalance order for {signal.ticker}: {e}")
 
         # 3. Momentum Trading: Scan for signals
-        momentum_signals = await scan_for_signals(alpaca)
+        if focused_ticker:
+            # focused_ticker scan logic (simplified for reactive mode)
+            momentum_signals = await scan_for_signals(alpaca, tickers=[focused_ticker])
+        else:
+            momentum_signals = await scan_for_signals(alpaca)
+
         execution_summary["momentum_signals"] = len(momentum_signals)
 
         # 3b. News Sentiment Strategy
         if config.ENABLE_LLM_FEATURES:
             news_sentiment_strategy = NewsSentimentStrategy()
-            news_signals = await news_sentiment_strategy.scan_for_signals(alpaca)
-            if news_signals:
-                momentum_signals.extend(news_signals)
-                execution_summary["news_signals"] = len(news_signals)
+            if focused_ticker:
+                # Focused news scan
+                news_signals = await news_sentiment_strategy.analyze_ticker_for_signal(
+                    focused_ticker, alpaca
+                )
+                if news_signals:
+                    # news_signals is a single Signal if successful, or None
+                    if isinstance(news_signals, list):
+                        momentum_signals.extend(news_signals)
+                    else:
+                        momentum_signals.append(news_signals)
+            else:
+                news_signals = await news_sentiment_strategy.scan_for_signals(alpaca)
+                if news_signals:
+                    momentum_signals.extend(news_signals)
+
+            execution_summary["news_signals"] = (
+                len(news_signals) if isinstance(news_signals, list) else (1 if news_signals else 0)
+            )
 
         # 3c. AI Orchestrator: Prioritize Signals
         if orchestrator and momentum_signals:
@@ -188,14 +222,16 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
         for signal in filtered_signals:
             try:
                 qty = calculate_position_size(signal, portfolio)
-                # Reduce size if in conservative mode
                 if execution_summary.get("risk_mode") == "conservative":
                     qty = Decimal(str(max(1, int(qty) // 2)))
 
-                order_id = await alpaca.submit_market_order(
+                limit_price = signal.entry_price * Decimal("1.002")
+
+                order_id = await alpaca.submit_limit_order(
                     symbol=signal.ticker,
                     qty=qty,
                     side="buy",
+                    limit_price=limit_price,
                     stop_loss=signal.stop_loss,
                     take_profit=signal.take_profit,
                 )

@@ -35,20 +35,22 @@ class NewsLLMLogger:
             # Convert to dict format
             records = []
             for article in articles:
-                records.append({
-                    "ticker": article.ticker,
-                    "title": article.title,
-                    "summary": article.summary,
-                    "source": article.source,
-                    "url": article.url,
-                    "published_at": article.published_at.isoformat(),
-                    "fetched_at": datetime.now(timezone.utc).isoformat(),
-                })
+                records.append(
+                    {
+                        "ticker": article.ticker,
+                        "title": article.title,
+                        "summary": article.summary,
+                        "source": article.source,
+                        "url": article.url,
+                        "published_at": article.published_at.isoformat(),
+                        "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
 
             # Bulk insert (upsert on conflict)
-            response = await client.table("news_articles").upsert(
-                records, on_conflict="url"
-            ).execute()
+            response = (
+                await client.table("news_articles").upsert(records, on_conflict="url").execute()
+            )
 
             logger.debug(
                 f"Logged {len(articles)} news articles for {articles[0].ticker if articles else 'unknown'}"
@@ -89,9 +91,7 @@ class NewsLLMLogger:
                 "llm_model": analysis.llm_model,
                 "llm_provider": analysis.llm_provider,
                 "llm_tokens_used": analysis.llm_tokens_used,
-                "llm_cost_usd": float(analysis.llm_cost_usd)
-                if analysis.llm_cost_usd
-                else None,
+                "llm_cost_usd": float(analysis.llm_cost_usd) if analysis.llm_cost_usd else None,
             }
 
             response = await client.table("llm_analysis_log").insert(data).execute()
@@ -111,7 +111,10 @@ class NewsLLMLogger:
 
     @staticmethod
     async def update_signal_link(
-        analysis_id: str, signal_id: str, signal_approved: bool, reject_reason: str | None = None
+        analysis_id: str,
+        signal_id: str | None,
+        signal_approved: bool,
+        reject_reason: str | None = None,
     ) -> None:
         """Update LLM analysis record with signal ID and approval status.
 
@@ -126,16 +129,14 @@ class NewsLLMLogger:
 
             data = {
                 "signal_id": signal_id,
-                "signal_generated": True,
+                "signal_generated": True if signal_id else False,
                 "signal_approved": signal_approved,
             }
 
             if reject_reason:
                 data["technical_filter_reason"] = reject_reason
 
-            await client.table("llm_analysis_log").update(data).eq(
-                "id", analysis_id
-            ).execute()
+            await client.table("llm_analysis_log").update(data).eq("id", analysis_id).execute()
 
             logger.debug(f"Updated LLM analysis {analysis_id} with signal link")
 

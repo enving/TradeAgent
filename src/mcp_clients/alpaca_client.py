@@ -13,6 +13,7 @@ from alpaca.trading.requests import (
     ClosePositionRequest,
     GetPortfolioHistoryRequest,
     MarketOrderRequest,
+    LimitOrderRequest,
     StopLossRequest,
     TakeProfitRequest,
 )
@@ -211,6 +212,65 @@ class AlpacaMCPClient:
 
         except Exception as e:
             logger.error(f"Failed to submit order for {symbol}: {e}")
+            raise
+
+    async def submit_limit_order(
+        self,
+        symbol: str,
+        qty: Decimal,
+        side: Literal["buy", "sell"],
+        limit_price: Decimal,
+        stop_loss: Decimal | None = None,
+        take_profit: Decimal | None = None,
+    ) -> str:
+        """Submit a limit order to Alpaca.
+
+        Args:
+            symbol: Stock ticker symbol
+            qty: Number of shares to trade
+            side: "buy" or "sell"
+            limit_price: Limit price for the order
+            stop_loss: Stop-loss price (optional)
+            take_profit: Take-profit price (optional)
+
+        Returns:
+            Alpaca order ID
+        """
+        await ALPACA_LIMITER.acquire()
+
+        try:
+            order_side = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
+            quantity = float(qty)
+            if stop_loss or take_profit:
+                quantity = int(round(quantity))
+
+            order_data = LimitOrderRequest(
+                symbol=symbol,
+                qty=quantity,
+                side=order_side,
+                limit_price=round(float(limit_price), 2),
+                time_in_force=TimeInForce.DAY,
+            )
+
+            if stop_loss or take_profit:
+                order_data.order_class = OrderClass.BRACKET
+                if stop_loss:
+                    order_data.stop_loss = StopLossRequest(stop_price=round(float(stop_loss), 2))
+                if take_profit:
+                    order_data.take_profit = TakeProfitRequest(
+                        limit_price=round(float(take_profit), 2)
+                    )
+
+            logger.info(
+                f"Submitting LIMIT order: {side.upper()} {qty} {symbol} @ ${limit_price} "
+                f"(SL: {stop_loss}, TP: {take_profit})"
+            )
+
+            order = self.trading_client.submit_order(order_data)
+            return str(order.id)
+
+        except Exception as e:
+            logger.error(f"Failed to submit limit order for {symbol}: {e}")
             raise
 
     async def close_position(self, symbol: str) -> bool:

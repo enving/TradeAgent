@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime, timedelta
+from typing import cast
 
 from openai import AsyncOpenAI
 from newsapi import NewsApiClient
@@ -22,14 +23,15 @@ class SentimentAnalyzer:
             self.news_api = NewsApiClient(api_key=config.NEWS_API_KEY)
 
         if not config.LLM_API_KEY:
-            logger.warning(f"LLM API key not set (provider: {config.LLM_PROVIDER}) - Sentiment Analysis disabled")
+            logger.warning(
+                f"LLM API key not set (provider: {config.LLM_PROVIDER}) - Sentiment Analysis disabled"
+            )
             self.llm_client = None
         else:
-            self.llm_client = AsyncOpenAI(
-                api_key=config.LLM_API_KEY,
-                base_url=config.LLM_BASE_URL
+            self.llm_client = AsyncOpenAI(api_key=config.LLM_API_KEY, base_url=config.LLM_BASE_URL)
+            logger.debug(
+                f"SentimentAnalyzer initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})"
             )
-            logger.debug(f"SentimentAnalyzer initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})")
 
     async def analyze_ticker(self, ticker: str) -> dict:
         """Analyze news sentiment for a specific ticker.
@@ -55,10 +57,8 @@ class SentimentAnalyzer:
             }
 
         try:
-            # 1. Fetch News
-            # Get news from last 24 hours
             from_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-            
+
             news = self.news_api.get_everything(
                 q=ticker,
                 from_param=from_date,
@@ -75,15 +75,13 @@ class SentimentAnalyzer:
                     "article_count": 0,
                 }
 
-            # Prepare context for LLM
             articles_text = "\n\n".join(
                 [
                     f"Title: {a['title']}\nDescription: {a['description']}\nSource: {a['source']['name']}"
-                    for a in news["articles"][:5]  # Analyze top 5 articles
+                    for a in news["articles"][:5]
                 ]
             )
 
-            # 2. Analyze with LLM
             prompt = f"""
             Analyze the sentiment of these news articles about {ticker} for a trading bot.
             
@@ -104,9 +102,12 @@ class SentimentAnalyzer:
                 max_tokens=300,
             )
 
-            # Parse JSON from response
-            content = response.choices[0].message.content
-            # Simple extraction if LLM adds text around JSON
+            content_raw = response.choices[0].message.content
+            if content_raw is None:
+                raise ValueError("Empty response from LLM")
+
+            content = cast(str, content_raw)
+
             if "{" in content and "}" in content:
                 json_str = content[content.find("{") : content.rfind("}") + 1]
                 result = json.loads(json_str)

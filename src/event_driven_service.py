@@ -73,10 +73,7 @@ class EventDrivenTradingService:
         """
         logger.info(f"🎯 Market event: {event_type} on {ticker}")
         logger.info(f"   Data: {data}")
-
-        # TODO: Modify daily_trading_loop to accept focused_ticker
-        # For now, just log the event
-        # await daily_trading_loop(focused_ticker=ticker)
+        await daily_trading_loop(focused_ticker=ticker)
 
     async def handle_news_event(self, event_type: str, ticker: str, data: dict):
         """Handle breaking news events.
@@ -85,9 +82,7 @@ class EventDrivenTradingService:
         """
         logger.info(f"📰 News event: {event_type} on {ticker}")
         logger.info(f"   Title: {data.get('title')}")
-
-        # TODO: Trigger focused scan
-        # await daily_trading_loop(focused_ticker=ticker)
+        await daily_trading_loop(focused_ticker=ticker)
 
     async def _run_heartbeat(self):
         """Log heartbeat to ensure service is alive."""

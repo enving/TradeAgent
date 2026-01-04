@@ -1,7 +1,7 @@
 """Sentiment Engine - Analyzes financial news using LLM."""
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, cast
 from decimal import Decimal
 from openai import AsyncOpenAI
 
@@ -9,15 +9,17 @@ from ..news.aggregator import NewsArticle
 from ..utils.config import config
 from ..utils.logger import logger
 
+
 class SentimentPrognosis:
     """Structured sentiment analysis result."""
+
     def __init__(
         self,
-        sentiment_score: float,  # -1.0 to 1.0
-        confidence: float,       # 0.0 to 1.0
-        impact: str,             # "HIGH", "MEDIUM", "LOW"
+        sentiment_score: float,
+        confidence: float,
+        impact: str,
         reasoning: str,
-        action: str              # "BUY", "SELL", "HOLD"
+        action: str,
     ):
         self.sentiment_score = sentiment_score
         self.confidence = confidence
@@ -31,8 +33,9 @@ class SentimentPrognosis:
             "confidence": self.confidence,
             "impact": self.impact,
             "reasoning": self.reasoning,
-            "action": self.action
+            "action": self.action,
         }
+
 
 class SentimentEngine:
     """Analyzes news articles to generate market prognosis."""
@@ -44,9 +47,13 @@ class SentimentEngine:
             base_url=config.LLM_BASE_URL,
         )
         self.model = config.LLM_MODEL
-        logger.debug(f"SentimentEngine initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})")
+        logger.debug(
+            f"SentimentEngine initialized with {config.LLM_PROVIDER} (model: {config.LLM_MODEL})"
+        )
 
-    async def analyze_news(self, ticker: str, articles: List[NewsArticle]) -> Optional[SentimentPrognosis]:
+    async def analyze_news(
+        self, ticker: str, articles: List[NewsArticle]
+    ) -> Optional[SentimentPrognosis]:
         """Analyze a list of news articles for a specific ticker.
 
         Args:
@@ -60,26 +67,27 @@ class SentimentEngine:
             logger.warning(f"No articles to analyze for {ticker}")
             return None
 
-        # Prepare context for LLM
         articles_text = ""
-        for i, article in enumerate(articles[:10], 1):  # Limit to top 10 recent articles
+        for i, article in enumerate(articles[:10], 1):
             articles_text += f"{i}. Title: {article.title}\n   Source: {article.source}\n   Date: {article.published_at}\n   Summary: {article.summary}\n\n"
 
         prompt = f"""
-        You are an expert financial analyst and trading AI.
-        Analyze the following news articles for {ticker} and provide a trading prognosis.
+        You are an expert financial analyst and alpha-seeking trading AI.
+        Analyze these news articles for {ticker} to identify high-probability trading opportunities.
 
         News Articles:
         {articles_text}
 
         Your task:
-        1. Assess the overall sentiment (-1.0 to +1.0).
-        2. Determine the potential market impact (HIGH, MEDIUM, LOW).
-        3. Assign a confidence score (0.0 to 1.0) based on source quality and consensus.
-        4. Recommend an action (BUY, SELL, HOLD).
-        5. Provide a concise reasoning (max 2 sentences).
+        1. Identify "Alpha Drivers": Focus on material events that cause rapid price appreciation (e.g., earnings beats, guidance raises, new contracts, FDA approvals, breakthrough products).
+        2. Assess Sentiment: Score from -1.0 (extremely bearish) to +1.0 (extremely bullish).
+        3. Determine Impact: (HIGH, MEDIUM, LOW) - how likely is this to move the price by >2% today?
+        4. Recommend Action: (BUY, SELL, HOLD).
+        5. Reasoning: Concise 1-sentence explanation of the primary alpha driver.
 
-        Output must be valid JSON in this format:
+        Ignore noise, recurring news, and minor updates. We only trade on significant news catalysts.
+
+        Output must be valid JSON:
         {{
             "sentiment_score": float,
             "confidence": float,
@@ -93,14 +101,22 @@ class SentimentEngine:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a financial trading assistant. Output only JSON."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are a financial trading assistant. Output only JSON.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
-                temperature=0.1,  # Low temperature for consistent output
-                response_format={"type": "json_object"}
+                temperature=0.1,
+                response_format={"type": "json_object"},
             )
 
-            content = response.choices[0].message.content
+            content_raw = response.choices[0].message.content
+            if content_raw is None:
+                logger.error(f"Empty response from LLM for {ticker}")
+                return None
+
+            content = cast(str, content_raw)
             data = json.loads(content)
 
             return SentimentPrognosis(
@@ -108,7 +124,7 @@ class SentimentEngine:
                 confidence=float(data.get("confidence", 0.5)),
                 impact=data.get("impact", "LOW").upper(),
                 reasoning=data.get("reasoning", "No reasoning provided."),
-                action=data.get("action", "HOLD").upper()
+                action=data.get("action", "HOLD").upper(),
             )
 
         except Exception as e:

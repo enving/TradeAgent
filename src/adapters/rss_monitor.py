@@ -31,19 +31,48 @@ class RSSFeedMonitor:
 
     # Free RSS feeds
     RSS_FEEDS = {
-        'yahoo_finance': 'https://finance.yahoo.com/news/rssindex',
-        'benzinga': 'https://www.benzinga.com/feed',
-        'marketwatch': 'https://www.marketwatch.com/rss/realtimeheadlines',
-        'seeking_alpha': 'https://seekingalpha.com/feed.xml',
+        "yahoo_finance": "https://finance.yahoo.com/news/rssindex",
+        "benzinga": "https://www.benzinga.com/feed",
+        "marketwatch": "https://www.marketwatch.com/rss/realtimeheadlines",
+        "seeking_alpha": "https://seekingalpha.com/feed.xml",
+        "cnbc_business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=401&id=10001147",
+        "investors_daily": "https://www.investors.com/feed/",
+        "pr_newswire": "https://www.prnewswire.com/rss/news-releases-list.rss",
     }
 
     # Keywords that trigger immediate scans
     HIGH_IMPACT_KEYWORDS = [
-        'earnings beat', 'earnings miss', 'guidance raised', 'guidance lowered',
-        'upgrade', 'downgrade', 'acquired', 'acquisition', 'merger',
-        'fda approval', 'clinical trial', 'lawsuit', 'investigation',
-        'stock split', 'dividend', 'buyback', 'restructuring',
-        'ceo', 'resignation', 'appointed', 'insider buying', 'insider selling',
+        "earnings beat",
+        "earnings miss",
+        "guidance raised",
+        "guidance lowered",
+        "upgrade",
+        "downgrade",
+        "acquired",
+        "acquisition",
+        "merger",
+        "fda approval",
+        "clinical trial",
+        "lawsuit",
+        "investigation",
+        "stock split",
+        "dividend",
+        "buyback",
+        "restructuring",
+        "ceo",
+        "resignation",
+        "appointed",
+        "insider buying",
+        "insider selling",
+        "joint venture",
+        "patent granted",
+        "major contract",
+        "strategic partnership",
+        "breakthrough",
+        "bankruptcy",
+        "insolvency",
+        "restatement",
+        "sec alert",
     ]
 
     def __init__(self, watchlist: List[str], event_callback: Callable):
@@ -67,10 +96,13 @@ class RSSFeedMonitor:
 
         logger.info(f"RSS Feed Monitor initialized for {len(watchlist)} tickers")
 
-    async def fetch_feed(self, session: aiohttp.ClientSession, feed_name: str, url: str) -> List[Dict]:
+    async def fetch_feed(
+        self, session: aiohttp.ClientSession, feed_name: str, url: str
+    ) -> List[Dict]:
         """Fetch and parse RSS feed."""
         try:
-            async with session.get(url, timeout=10) as response:
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with session.get(url, timeout=timeout) as response:
                 if response.status != 200:
                     logger.warning(f"Failed to fetch {feed_name}: HTTP {response.status}")
                     return []
@@ -79,19 +111,19 @@ class RSSFeedMonitor:
                 root = ET.fromstring(content)
 
                 articles = []
-                for item in root.findall('.//item'):
-                    title = item.find('title')
-                    link = item.find('link')
-                    pub_date = item.find('pubDate')
-                    description = item.find('description')
+                for item in root.findall(".//item"):
+                    title = item.find("title")
+                    link = item.find("link")
+                    pub_date = item.find("pubDate")
+                    description = item.find("description")
 
                     if title is not None and link is not None:
                         article = {
-                            'source': feed_name,
-                            'title': title.text,
-                            'link': link.text,
-                            'published': pub_date.text if pub_date is not None else None,
-                            'description': description.text if description is not None else "",
+                            "source": feed_name,
+                            "title": title.text,
+                            "link": link.text,
+                            "published": pub_date.text if pub_date is not None else None,
+                            "description": description.text if description is not None else "",
                         }
                         articles.append(article)
 
@@ -107,8 +139,8 @@ class RSSFeedMonitor:
         Returns:
             (is_relevant, ticker) tuple
         """
-        title = article['title'].upper()
-        description = article.get('description', '').upper()
+        title = article["title"].upper()
+        description = article.get("description", "").upper()
         content = f"{title} {description}"
 
         # Check if any watchlist ticker mentioned
@@ -124,7 +156,7 @@ class RSSFeedMonitor:
     async def process_article(self, article: Dict):
         """Process new article and trigger events if relevant."""
         # Check if already seen
-        article_id = article['link']
+        article_id = article["link"]
         if article_id in self.seen_articles:
             return
 
@@ -141,31 +173,26 @@ class RSSFeedMonitor:
                 event_type="breaking_news",
                 ticker=ticker,
                 data={
-                    'title': article['title'],
-                    'source': article['source'],
-                    'link': article['link'],
-                    'published': article.get('published'),
-                    'description': article.get('description', ''),
-                }
+                    "title": article["title"],
+                    "source": article["source"],
+                    "link": article["link"],
+                    "published": article.get("published"),
+                    "description": article.get("description", ""),
+                },
             )
 
     async def poll_feeds(self):
         """Poll all RSS feeds."""
         async with aiohttp.ClientSession() as session:
-            tasks = [
-                self.fetch_feed(session, name, url)
-                for name, url in self.RSS_FEEDS.items()
-            ]
+            tasks = [self.fetch_feed(session, name, url) for name, url in self.RSS_FEEDS.items()]
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Process all articles
             for articles in results:
-                if isinstance(articles, Exception):
-                    continue
-
-                for article in articles:
-                    await self.process_article(article)
+                if isinstance(articles, list):
+                    for article in articles:
+                        await self.process_article(article)
 
     async def start(self):
         """Start monitoring RSS feeds."""
