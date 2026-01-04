@@ -16,6 +16,7 @@ class ReflectionAgent:
     """Agent that learns from past trades."""
 
     def __init__(self):
+        """Initialize reflection agent."""
         self.supabase = SupabaseClient.get_instance()
 
     async def run_daily_reflection(self) -> Dict[str, Any]:
@@ -27,22 +28,38 @@ class ReflectionAgent:
             response = (
                 client.table("trades").select("*").order("date", desc=True).limit(20).execute()
             )
-            trades_data = response.data
+            trades_data = getattr(response, "data", [])
+
+            if not isinstance(trades_data, list):
+                logger.warning("Reflection Agent: Expected list of trades, got something else.")
+                return {"status": "error", "message": "Invalid data format"}
 
             closed_trades = [
-                t for t in trades_data if t.get("action") == "SELL" and t.get("pnl") is not None
+                t
+                for t in trades_data
+                if isinstance(t, dict) and t.get("action") == "SELL" and t.get("pnl") is not None
             ]
 
             if not closed_trades:
                 logger.info("Reflection Agent: No closed trades to analyze today.")
                 return {"status": "no_trades"}
 
-            total_pnl = sum(float(t["pnl"]) for t in closed_trades)
-            win_count = len([t for t in closed_trades if float(t["pnl"]) > 0])
-            win_rate = win_count / len(closed_trades) if closed_trades else 0
+            total_pnl = 0.0
+            win_count = 0
+            for t in closed_trades:
+                try:
+                    pnl_val = float(str(t.get("pnl", 0)))
+                    total_pnl += pnl_val
+                    if pnl_val > 0:
+                        win_count += 1
+                except (ValueError, TypeError):
+                    continue
+
+            win_rate = win_count / len(closed_trades) if closed_trades else 0.0
 
             logger.info(
-                f"Reflection Stats: {len(closed_trades)} trades, PnL: ${total_pnl:.2f}, Win Rate: {win_rate:.1%}"
+                f"Reflection Stats: {len(closed_trades)} trades, "
+                f"PnL: ${total_pnl:.2f}, Win Rate: {win_rate:.1%}"
             )
 
             lessons = []

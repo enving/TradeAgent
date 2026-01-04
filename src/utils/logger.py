@@ -2,68 +2,95 @@
 
 import logging
 import sys
+import asyncio
 from pathlib import Path
+from typing import Any
 
 from .config import config
 
+class SupabaseLogHandler(logging.Handler):
+    """Logging handler that writes to Supabase asynchronously."""
+    
+    def emit(self, record: logging.LogRecord):
+        """Queue log record for writing."""
+        if record.levelno < logging.WARNING:
+            return
+            
+        try:
+            msg = self.format(record)
+            log_data = {
+                "level": record.levelname,
+                "module": record.name,
+                "message": msg,
+                "trace": None
+            }
+            
+            if record.exc_info:
+                from logging import Formatter
+                log_data["trace"] = Formatter().formatException(record.exc_info)
+                
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._flush_to_supabase(log_data))
+            except RuntimeError:
+                pass
+        except Exception:
+            self.handleError(record)
+
+    async def _flush_to_supabase(self, data: dict[str, Any]):
+        """Write to Supabase via lazy import."""
+        try:
+            # Absolute import to be safe
+            from src.database.supabase_client import SupabaseClient
+            await SupabaseClient.log_system_event(
+                level=data["level"],
+                module=data["module"],
+                message=data["message"],
+                trace=data["trace"]
+            )
+        except Exception as e:
+            # Critical: Use print to stderr to avoid infinite recursion
+            print(f"SupabaseLogHandler critical failure: {e}", file=sys.stderr)
 
 def setup_logger(
     name: str = "tradeagent",
     log_file: str | None = "logs/trading.log",
     level: str | None = None,
 ) -> logging.Logger:
-    """Set up and configure a logger with console and file handlers.
-
-    Args:
-        name: Logger name
-        log_file: Path to log file (creates directory if needed)
-        level: Log level (uses config.LOG_LEVEL if not provided)
-
-    Returns:
-        Configured logger instance
-    """
-    # Use config log level if not explicitly provided
+    """Set up and configure a logger with console, file, and DB handlers."""
     if level is None:
         level = config.LOG_LEVEL
 
-    # Create logger
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper()))
 
-    # Prevent duplicate handlers
     if logger.handlers:
         return logger
 
-    # Create formatters
     detailed_formatter = logging.Formatter(
         fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    console_formatter = logging.Formatter(
-        fmt="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%H:%M:%S",
-    )
-
-    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(console_formatter)
+    console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", "%H:%M:%S"))
     logger.addHandler(console_handler)
 
-    # File handler (if log_file is provided)
     if log_file:
-        # Create logs directory if it doesn't exist
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(detailed_formatter)
         logger.addHandler(file_handler)
+    
+    if config.SUPABASE_URL and config.SUPABASE_KEY:
+        db_handler = SupabaseLogHandler()
+        db_handler.setLevel(logging.WARNING)
+        db_handler.setFormatter(detailed_formatter)
+        logger.addHandler(db_handler)
 
     return logger
 
-
-# Global logger instance
 logger = setup_logger()

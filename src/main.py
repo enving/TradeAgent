@@ -10,6 +10,7 @@ Usage:
 import asyncio
 from typing import Any, cast, Literal
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from .adapters.market_data_adapter import get_market_data_adapter
 from .agents.orchestrator import TradingOrchestrator
@@ -27,7 +28,6 @@ from .mcp_clients.alpaca_client import AlpacaMCPClient
 from .models.trade import Trade
 from .risk.position_sizer import initialize_position_sizer
 from .strategies.defensive_core import calculate_rebalancing_orders, should_rebalance
-from .strategies.defensive_core import calculate_rebalancing_orders, should_rebalance
 from .strategies.momentum_trading import check_exit_conditions, scan_for_signals
 from .strategies.news_strategy import NewsStrategy
 from .strategies.news_driven import NewsSentimentStrategy
@@ -36,56 +36,44 @@ from .utils.logger import logger
 
 
 async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
-    """Main trading loop - executes all trading logic.
-
-    Workflow:
-    1. Get portfolio state
-    2. Check defensive core rebalancing
-    3. Scan for momentum signals
-    4. Apply risk filters
-    5. Execute orders
-    6. Check exit conditions
-    7. Analyze performance
-
-    Args:
-        allow_premarket: If True, allows trading even when market is closed
-                        (orders will execute at market open)
-
-    Returns:
-        Dictionary with execution summary
-
-    Raises:
-        Exception: If critical errors occur
-    """
+    """Main trading loop - executes all trading logic."""
     logger.info("=== Daily Trading Loop Started ===")
     logger.info(f"Environment: {config.ENVIRONMENT}")
     logger.info(f"Time: {datetime.now(UTC).isoformat()}")
 
+    execution_summary: dict[str, Any] = {
+        "start_time": datetime.now(UTC),
+        "rebalance_orders": 0,
+        "momentum_signals": 0,
+        "orders_executed": 0,
+        "positions_closed": 0,
+    }
+
     try:
-        # Check market hours before trading (unless pre-market allowed)
+        # Check market hours before trading
         adapter = await get_market_data_adapter()
         market_open = await adapter.is_market_open()
 
         if not market_open and not allow_premarket:
             clock = await adapter.get_market_clock()
-            if clock:
-                logger.info("Market is currently closed")
-                logger.info(f"Next open: {clock.next_open}")
-            else:
-                logger.info("Market is currently closed")
-            return {
-                "status": "skipped",
-                "reason": "market_closed",
-                "next_open": clock.next_open if clock else None,
-            }
+            next_open = getattr(clock, "next_open", None) if clock else None
+            logger.info(f"Market is currently closed. Next open: {next_open}")
+
+            execution_summary.update(
+                {
+                    "status": "skipped",
+                    "reason": "market_closed",
+                    "next_open": str(next_open) if next_open else None,
+                }
+            )
+            return execution_summary
 
         if market_open:
             logger.info("Market is OPEN - proceeding with trading")
         else:
             logger.info("Market is CLOSED - placing pre-market orders")
-            logger.info("Orders will execute when market opens at 9:30 AM ET")
 
-        logger.info("Checking Economic Calendar...")
+        # Economic Calendar Check
         calendar = get_economic_calendar()
         should_avoid, reason = calendar.should_avoid_trading()
 
@@ -106,7 +94,7 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
             logger.info("Initializing AI Orchestrator...")
             orchestrator = TradingOrchestrator()
 
-        # Initialize position sizer with historical data
+        # Initialize position sizer
         await initialize_position_sizer(supabase)
 
         # 1. Get portfolio state
@@ -115,11 +103,9 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
         positions = await alpaca.get_positions()
 
         logger.info(f"Portfolio Value: ${portfolio.portfolio_value}")
-        logger.info(f"Cash: ${portfolio.cash}")
         logger.info(f"Positions: {len(positions)}")
 
         # 1a. CRITICAL RISK CHECK: Daily Circuit Breaker
-        # Calculate daily PnL (Equity - Last Equity)
         daily_pnl = portfolio.equity - portfolio.last_equity
         daily_pnl_pct = daily_pnl / portfolio.last_equity if portfolio.last_equity > 0 else 0
 
@@ -127,53 +113,40 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
 
         if check_daily_loss_limit(daily_pnl, portfolio.portfolio_value):
             logger.error("🛑 CIRCUIT BREAKER TRIPPED. Halting trading for the day.")
-            return {
-                "status": "halted",
-                "reason": "circuit_breaker",
-                "daily_pnl": float(daily_pnl),
-                "daily_pnl_pct": float(daily_pnl_pct),
-            }
+            execution_summary.update(
+                {
+                    "status": "halted",
+                    "reason": "circuit_breaker",
+                    "daily_pnl": float(daily_pnl),
+                    "daily_pnl_pct": float(daily_pnl_pct),
+                }
+            )
+            return execution_summary
 
-        execution_summary = {
-            "start_time": datetime.now(UTC),
-            "portfolio_value": float(portfolio.portfolio_value),
-            "rebalance_orders": 0,
-            "momentum_signals": 0,
-            "orders_executed": 0,
-            "positions_closed": 0,
-        }
+        execution_summary["portfolio_value"] = float(portfolio.portfolio_value)
 
-        # 1b. AI Orchestrator: Analyze Market Regime (if enabled)
+        # 1b. AI Orchestrator: Analyze Market Regime
         if orchestrator:
-            logger.info("=== AI Orchestrator: Market Regime Analysis ===")
             regime, confidence, reasoning = await orchestrator.analyze_market_regime(
                 portfolio, positions
             )
-            logger.info(f"Market Regime: {regime} (confidence: {confidence:.2f})")
-            logger.info(f"Reasoning: {reasoning}")
             execution_summary["market_regime"] = regime
             execution_summary["regime_confidence"] = confidence
 
         # 2. Defensive Core: Check rebalancing
         today = datetime.now(UTC).date()
-
         if await should_rebalance(today, positions, portfolio):
-            logger.info("Rebalancing triggered")
             rebalance_signals = await calculate_rebalancing_orders(positions, portfolio, alpaca)
             execution_summary["rebalance_orders"] = len(rebalance_signals)
 
             for signal in rebalance_signals:
                 try:
-                    # Calculate position size
                     qty = calculate_position_size(signal, portfolio)
-
-                    # Submit order
                     side = cast(Literal["buy", "sell"], signal.action.lower())
                     order_id = await alpaca.submit_market_order(
                         symbol=signal.ticker, qty=qty, side=side
                     )
 
-                    # Log trade
                     action = cast(Literal["BUY", "SELL"], signal.action)
                     trade = Trade(
                         date=datetime.now(UTC),
@@ -184,80 +157,41 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
                         strategy="defensive",
                         alpaca_order_id=order_id,
                     )
-
                     await SupabaseClient.log_trade(trade)
-
-                    # Log ML features for rebalancing trades
-                    await ml_logger.log_signal(
-                        signal=signal,
-                        portfolio_value=portfolio.portfolio_value,
-                        position_count=len(positions),
-                        cash_available=portfolio.cash,
-                        trigger_reason="defensive_core_rebalancing",
-                    )
-
                     execution_summary["orders_executed"] += 1
-
-                    logger.info(f"Rebalance order: {signal.action} {qty} {signal.ticker}")
-
                 except Exception as e:
                     logger.error(f"Failed to execute rebalance order for {signal.ticker}: {e}")
-                    continue
 
         # 3. Momentum Trading: Scan for signals
-        logger.info("Scanning for momentum signals...")
         momentum_signals = await scan_for_signals(alpaca)
         execution_summary["momentum_signals"] = len(momentum_signals)
 
-        logger.info(f"Found {len(momentum_signals)} momentum signals")
-
-        # REMOVED: News verification layer that was filtering momentum signals
-        # Technical signals now execute directly without LLM confirmation
-        # This reduces over-filtering and allows more valid trades through
-
-        # 3b. News Sentiment Strategy (Optional - Prognosis-Driven)
-        # Generates independent signals based on news sentiment
-        # Does NOT filter momentum signals, only adds additional opportunities
+        # 3b. News Sentiment Strategy
         if config.ENABLE_LLM_FEATURES:
-            logger.info("Running News Sentiment Strategy...")
             news_sentiment_strategy = NewsSentimentStrategy()
             news_signals = await news_sentiment_strategy.scan_for_signals(alpaca)
-
             if news_signals:
-                logger.info(f"Found {len(news_signals)} news-driven signals")
                 momentum_signals.extend(news_signals)
                 execution_summary["news_signals"] = len(news_signals)
-            else:
-                logger.info("No news-driven signals found")
 
-        # 3c. AI Orchestrator: Prioritize Signals (if enabled)
+        # 3c. AI Orchestrator: Prioritize Signals
         if orchestrator and momentum_signals:
-            logger.info("=== AI Orchestrator: Signal Prioritization ===")
             prioritized = await orchestrator.prioritize_signals(
                 momentum_signals, portfolio, positions
             )
-            # Replace signals with prioritized list (sorted by quality)
             momentum_signals = [signal for signal, score, reasoning in prioritized]
-            logger.info(f"Signals prioritized. Top 3: {[s.ticker for s in momentum_signals[:3]]}")
 
-            # Log top signal reasoning
-            if prioritized:
-                top_signal, top_score, top_reasoning = prioritized[0]
-                logger.info(f"Top signal {top_signal.ticker}: Score={top_score:.2f}")
-                logger.info(f"Reasoning: {top_reasoning}")
-
-        # 4. Apply risk filters (includes correlation & sector checks)
+        # 4. Apply risk filters
         filtered_signals = await filter_signals_by_risk(momentum_signals, portfolio, positions)
-
-        logger.info(f"Risk filter: {len(filtered_signals)} signals approved")
 
         # 5. Execute momentum entries
         for signal in filtered_signals:
             try:
-                # Calculate position size
                 qty = calculate_position_size(signal, portfolio)
+                # Reduce size if in conservative mode
+                if execution_summary.get("risk_mode") == "conservative":
+                    qty = Decimal(str(max(1, int(qty) // 2)))
 
-                # Submit order with bracket (stop-loss + take-profit)
                 order_id = await alpaca.submit_market_order(
                     symbol=signal.ticker,
                     qty=qty,
@@ -266,7 +200,6 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
                     take_profit=signal.take_profit,
                 )
 
-                # Log trade
                 trade = Trade(
                     date=datetime.now(UTC),
                     ticker=signal.ticker,
@@ -279,61 +212,21 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
                     volume_ratio=signal.volume_ratio,
                     alpaca_order_id=order_id,
                 )
-
                 await SupabaseClient.log_trade(trade)
-                await SupabaseClient.log_signal(signal)
-
-                # Log ML features for self-learning
-                await ml_logger.log_signal(
-                    signal=signal,
-                    portfolio_value=portfolio.portfolio_value,
-                    position_count=len(positions),
-                    cash_available=portfolio.cash,
-                    trigger_reason="momentum_entry_criteria_met",
-                )
-
-                # AI Orchestrator: Explain Decision (if enabled)
-                if orchestrator:
-                    explanation = await orchestrator.explain_decision(
-                        signal,
-                        approved=True,
-                        factors={
-                            "risk_filter_passed": True,
-                            "position_size": qty,
-                            "portfolio_value": float(portfolio.portfolio_value),
-                            "strategy": signal.strategy,
-                        },
-                    )
-                    logger.info(f"Decision Explanation for {signal.ticker}:\n{explanation}")
-
                 execution_summary["orders_executed"] += 1
-
-                logger.info(
-                    f"Momentum entry: BUY {qty} {signal.ticker} @ ${signal.entry_price:.2f}"
-                )
-
             except Exception as e:
                 logger.error(f"Failed to execute momentum order for {signal.ticker}: {e}")
-                continue
 
-        # 6. Check exit conditions for momentum positions
+        # 6. Check exit conditions
         defensive_symbols = {"VTI", "VGK", "GLD"}
-
         for position in positions:
-            # Skip defensive core positions
             if position.symbol in defensive_symbols:
                 continue
 
             try:
                 should_exit, reason = await check_exit_conditions(position, alpaca)
-
                 if should_exit:
-                    logger.info(f"Exiting {position.symbol}: {reason}")
-
-                    # Close position
                     await alpaca.close_position(position.symbol)
-
-                    # Log exit
                     exit_reason = cast(
                         Literal["stop_loss", "take_profit", "technical_exit", "rebalance"] | None,
                         reason,
@@ -350,41 +243,30 @@ async def daily_trading_loop(allow_premarket: bool = False) -> dict[str, Any]:
                         pnl_pct=position.unrealized_pnl_pct,
                         strategy="momentum",
                     )
-
                     await SupabaseClient.log_trade(exit_trade)
                     execution_summary["positions_closed"] += 1
-
-                    logger.info(
-                        f"Position closed: {position.symbol} (P&L: ${position.unrealized_pnl:.2f})"
-                    )
-
             except Exception as e:
                 logger.error(f"Failed to check exit for {position.symbol}: {e}")
-                continue
 
-        # 7. Daily Performance Analysis
-        logger.info("Running daily performance analysis...")
+        # 7. Performance Analysis
         await analyze_daily_performance()
 
-        logger.info("Running Daily Reflection Agent...")
+        # 8. Daily Reflection
         reflection_agent = ReflectionAgent()
         await reflection_agent.run_daily_reflection()
 
         if today.weekday() == 6:  # Sunday
-            logger.info("Generating weekly report...")
             await generate_weekly_report()
 
         execution_summary["end_time"] = datetime.now(UTC)
         execution_summary["success"] = True
-
-        logger.info("=== Daily Trading Loop Completed ===")
-        logger.info(f"Summary: {execution_summary}")
-
         return execution_summary
 
     except Exception as e:
         logger.error(f"Critical error in trading loop: {e}", exc_info=True)
-        raise
+        execution_summary["error"] = str(e)
+        execution_summary["success"] = False
+        return execution_summary
 
 
 async def main() -> None:
@@ -392,7 +274,6 @@ async def main() -> None:
     try:
         await daily_trading_loop()
         logger.info("Trading system executed successfully")
-
     except Exception as e:
         logger.error(f"Trading system failed: {e}")
         raise

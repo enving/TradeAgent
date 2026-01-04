@@ -13,6 +13,8 @@ from alpaca.trading.requests import (
     ClosePositionRequest,
     GetPortfolioHistoryRequest,
     MarketOrderRequest,
+    StopLossRequest,
+    TakeProfitRequest,
 )
 from alpaca.trading.enums import OrderSide, TimeInForce, OrderClass
 from alpaca.data.historical import StockHistoricalDataClient
@@ -77,13 +79,17 @@ class AlpacaMCPClient:
             # Get account from Alpaca SDK
             account = self.trading_client.get_account()
 
+            # Type casting to dict for untyped SDK response handling
+            # The Alpaca SDK returns objects that behave like dicts or have attributes
+            # but static analysis doesn't know about them
+
             # Convert to our Portfolio model
             portfolio = Portfolio(
-                cash=Decimal(str(account.cash)),
-                portfolio_value=Decimal(str(account.portfolio_value)),
-                buying_power=Decimal(str(account.buying_power)),
-                equity=Decimal(str(account.equity)),
-                last_equity=Decimal(str(account.last_equity)),
+                cash=Decimal(str(getattr(account, "cash", "0"))),
+                portfolio_value=Decimal(str(getattr(account, "portfolio_value", "0"))),
+                buying_power=Decimal(str(getattr(account, "buying_power", "0"))),
+                equity=Decimal(str(getattr(account, "equity", "0"))),
+                last_equity=Decimal(str(getattr(account, "last_equity", "0"))),
             )
 
             logger.debug(f"Portfolio value: ${portfolio.portfolio_value}")
@@ -115,13 +121,13 @@ class AlpacaMCPClient:
             positions = []
             for pos in alpaca_positions:
                 position = Position(
-                    symbol=pos.symbol,
-                    quantity=Decimal(str(pos.qty)),
-                    avg_entry_price=Decimal(str(pos.avg_entry_price)),
-                    current_price=Decimal(str(pos.current_price)),
-                    market_value=Decimal(str(pos.market_value)),
-                    unrealized_pnl=Decimal(str(pos.unrealized_pl)),
-                    unrealized_pnl_pct=Decimal(str(pos.unrealized_plpc)),
+                    symbol=str(getattr(pos, "symbol", "")),
+                    quantity=Decimal(str(getattr(pos, "qty", "0"))),
+                    avg_entry_price=Decimal(str(getattr(pos, "avg_entry_price", "0"))),
+                    current_price=Decimal(str(getattr(pos, "current_price", "0"))),
+                    market_value=Decimal(str(getattr(pos, "market_value", "0"))),
+                    unrealized_pnl=Decimal(str(getattr(pos, "unrealized_pl", "0"))),
+                    unrealized_pnl_pct=Decimal(str(getattr(pos, "unrealized_plpc", "0"))),
                 )
                 positions.append(position)
 
@@ -184,10 +190,12 @@ class AlpacaMCPClient:
                 order_data.order_class = OrderClass.BRACKET
                 if stop_loss:
                     # Round to 2 decimal places (Alpaca requirement)
-                    order_data.stop_loss = {"stop_price": round(float(stop_loss), 2)}
+                    order_data.stop_loss = StopLossRequest(stop_price=round(float(stop_loss), 2))
                 if take_profit:
                     # Round to 2 decimal places (Alpaca requirement)
-                    order_data.take_profit = {"limit_price": round(float(take_profit), 2)}
+                    order_data.take_profit = TakeProfitRequest(
+                        limit_price=round(float(take_profit), 2)
+                    )
 
             logger.info(
                 f"Submitting order: {side.upper()} {qty} {symbol} "
