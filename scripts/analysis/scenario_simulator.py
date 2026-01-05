@@ -12,12 +12,13 @@ from src.core.indicators import calculate_rsi, calculate_macd, calculate_sma, ca
 from src.utils.logger import logger
 
 DEFAULT_PARAMS = {
-    "rsi_lower": 45,
+    "rsi_lower": 50,
     "rsi_upper": 75,
-    "stop_loss_pct": 0.03,
+    "stop_loss_pct": 0.05,
     "take_profit_pct": 0.08,
     "volume_ratio": 1.1,
     "macd_threshold": 0.0,
+    "volatility_threshold": 0.04,
 }
 
 
@@ -147,7 +148,7 @@ def simulate_strategy(df: pd.DataFrame, params: Dict) -> List[Dict]:
             is_volume_high = row["volume_ratio"] > params["volume_ratio"]
 
             range_ratio = (row["high"] - row["low"]) / row["close"]
-            is_volatility_ok = range_ratio < 0.04
+            is_volatility_ok = range_ratio < params.get("volatility_threshold", 0.04)
 
             if all(
                 [

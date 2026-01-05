@@ -25,8 +25,8 @@ async def setup_historical_sentiment(start_date: datetime, end_date: datetime):
             .eq("reasoning", "Historical simulation")
             .execute()
         )
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to clear historical sentiment: {e}")
 
     current = start_date
     while current <= end_date:
@@ -63,8 +63,8 @@ async def setup_historical_sentiment(start_date: datetime, end_date: datetime):
                     )
                     .execute()
                 )
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to insert historical sentiment for {ticker}: {e}")
         current += timedelta(days=1)
 
 
