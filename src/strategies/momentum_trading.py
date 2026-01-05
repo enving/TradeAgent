@@ -5,6 +5,7 @@ Uses technical indicators to identify entry/exit points.
 Allocates 30% of portfolio to momentum trades (max 5 positions).
 """
 
+import pandas as pd
 from decimal import Decimal
 
 from ..config.strategy_params import get_strategy_parameters
@@ -86,6 +87,30 @@ DEFAULT_STRATEGY_PARAMS = {
 }
 
 
+def check_momentum_entry(latest_bar: pd.Series, params: dict[str, float]) -> bool:
+    """Check if a bar meets momentum entry criteria.
+
+    Args:
+        latest_bar: Row with columns [rsi, histogram, close, sma50, sma20, volume_ratio, high, low]
+        params: Strategy parameters
+
+    Returns:
+        True if all conditions met
+    """
+    range_ratio = (latest_bar["high"] - latest_bar["low"]) / latest_bar["close"]
+
+    conditions = [
+        params["rsi_lower"] < latest_bar["rsi"] < params["rsi_upper"],
+        latest_bar["histogram"] > params["macd_threshold"],
+        latest_bar["close"] > latest_bar["sma50"],  # Price above long-term trend
+        latest_bar["sma20"] > latest_bar["sma50"],  # Golden Cross alignment
+        latest_bar["volume_ratio"] > params["volume_ratio"],
+        range_ratio < params.get("volatility_threshold", 0.04),
+    ]
+
+    return all(conditions)
+
+
 async def scan_for_signals(
     alpaca_client: AlpacaMCPClient, tickers: list[str] | None = None
 ) -> list[Signal]:
@@ -159,18 +184,7 @@ async def scan_for_signals(
 
             # Entry criteria (ALL must be True) - pure boolean logic
             # Uses dynamically optimized parameters
-            range_ratio = (latest["high"] - latest["low"]) / latest["close"]
-
-            entry_conditions = [
-                params["rsi_lower"] < latest["rsi"] < params["rsi_upper"],
-                latest["histogram"] > params["macd_threshold"],
-                latest["close"] > latest["sma50"],  # Price above long-term trend
-                latest["sma20"] > latest["sma50"],  # Golden Cross alignment
-                latest["volume_ratio"] > params["volume_ratio"],
-                range_ratio < params.get("volatility_threshold", 0.04),
-            ]
-
-            if all(entry_conditions):
+            if check_momentum_entry(latest, params):
                 # Calculate stop-loss and take-profit
                 entry_price = Decimal(str(latest["close"]))
                 stop_loss = entry_price * Decimal(str(1 - params["stop_loss_pct"]))

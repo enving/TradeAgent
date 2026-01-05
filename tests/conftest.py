@@ -424,17 +424,17 @@ def reset_strategy_params():
     """Reset strategy parameters after each test.
 
     Ensures tests don't affect each other through global state.
+    Note: STRATEGY_PARAMS is deprecated, now using StrategyParametersManager.
+    This fixture is kept for backward compatibility with older tests.
     """
-    from src.strategies.momentum_trading import STRATEGY_PARAMS
+    try:
+        from src.strategies.momentum_trading import DEFAULT_STRATEGY_PARAMS
 
-    # Store original values
-    original_params = STRATEGY_PARAMS.copy()
-
-    yield
-
-    # Restore after test
-    STRATEGY_PARAMS.clear()
-    STRATEGY_PARAMS.update(original_params)
+        # Do nothing as we don't have global state to reset anymore
+        # Or mock StrategyParametersManager if needed
+        yield
+    except ImportError:
+        yield
 
 
 @pytest.fixture

@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from src.core.indicators import calculate_rsi, calculate_macd, calculate_sma, calculate_volume_ratio
 from src.utils.logger import logger
+from src.strategies.momentum_trading import check_momentum_entry
 
 DEFAULT_PARAMS = {
     "rsi_lower": 50,
@@ -141,25 +142,7 @@ def simulate_strategy(df: pd.DataFrame, params: Dict) -> List[Dict]:
         date = df.index[i]
 
         if position is None:
-            is_rsi_valid = params["rsi_lower"] < row["rsi"] < params["rsi_upper"]
-            is_macd_positive = row["histogram"] > params["macd_threshold"]
-            is_above_sma50 = row["close"] > row["sma50"]
-            is_sma_aligned = row["sma20"] > row["sma50"]
-            is_volume_high = row["volume_ratio"] > params["volume_ratio"]
-
-            range_ratio = (row["high"] - row["low"]) / row["close"]
-            is_volatility_ok = range_ratio < params.get("volatility_threshold", 0.04)
-
-            if all(
-                [
-                    is_rsi_valid,
-                    is_macd_positive,
-                    is_above_sma50,
-                    is_sma_aligned,
-                    is_volume_high,
-                    is_volatility_ok,
-                ]
-            ):
+            if check_momentum_entry(row, params):
                 position = {
                     "entry_date": date,
                     "entry_price": row["close"],

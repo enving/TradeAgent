@@ -190,7 +190,18 @@ python3 test_correlation_monitor.py
 
 # Test sentiment tracker
 python3 test_sentiment_tracker.py
-\`\`\`
+```
+
+### Strategy Simulation
+Test strategy behavior against historical and synthetic market scenarios:
+
+```bash
+# Run scenario simulation (Flash Crash, Market Gap, etc.)
+python3 scripts/analysis/scenario_simulator.py
+
+# Simulate historical sentiment based trading
+python3 scripts/analysis/real_case_simulation.py
+```
 
 ---
 
