@@ -76,12 +76,13 @@ def get_dynamic_watchlist() -> list[str]:
 # Strategy parameters (dynamically optimized by AdaptiveOptimizer)
 # These defaults are used if no optimized parameters exist
 DEFAULT_STRATEGY_PARAMS = {
-    "rsi_lower": 45,  # Widened from 55 - captures more momentum setups
-    "rsi_upper": 75,  # Widened from 70 - allows stronger momentum
-    "stop_loss_pct": 0.03,  # Tightened to 3% - reduces drawdowns
-    "take_profit_pct": 0.08,  # Realistic 8% target (was 15%)
-    "volume_ratio": 1.1,  # Slightly relaxed from 1.2
-    "macd_threshold": 0.0,  # MACD histogram must be positive
+    "rsi_lower": 50,
+    "rsi_upper": 75,
+    "stop_loss_pct": 0.05,
+    "take_profit_pct": 0.08,
+    "volume_ratio": 1.1,
+    "macd_threshold": 0.0,
+    "volatility_threshold": 0.04,
 }
 
 
@@ -158,12 +159,15 @@ async def scan_for_signals(
 
             # Entry criteria (ALL must be True) - pure boolean logic
             # Uses dynamically optimized parameters
+            range_ratio = (latest["high"] - latest["low"]) / latest["close"]
+
             entry_conditions = [
                 params["rsi_lower"] < latest["rsi"] < params["rsi_upper"],
                 latest["histogram"] > params["macd_threshold"],
                 latest["close"] > latest["sma50"],  # Price above long-term trend
                 latest["sma20"] > latest["sma50"],  # Golden Cross alignment
                 latest["volume_ratio"] > params["volume_ratio"],
+                range_ratio < params.get("volatility_threshold", 0.04),
             ]
 
             if all(entry_conditions):

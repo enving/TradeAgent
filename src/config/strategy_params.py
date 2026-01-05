@@ -17,12 +17,13 @@ class StrategyParameters:
     # Default parameters (fallback)
     DEFAULTS = {
         "momentum": {
-            "rsi_lower": 45,
+            "rsi_lower": 50,
             "rsi_upper": 75,
             "macd_threshold": 0.0,
             "volume_ratio": 1.1,
-            "stop_loss_pct": 0.03,  # 3%
-            "take_profit_pct": 0.08,  # 8%
+            "stop_loss_pct": 0.05,
+            "take_profit_pct": 0.08,
+            "volatility_threshold": 0.04,
         },
         "news_sentiment": {
             "sentiment_threshold": 0.7,
@@ -107,14 +108,18 @@ class StrategyParameters:
 
         try:
             client = await SupabaseClient.get_instance()
-            await client.table("parameter_changes").insert(
-                {
-                    "date": datetime.now(timezone.utc).isoformat(),
-                    "reason": f"[{strategy}] {reason}",
-                    "old_params": old_params,
-                    "new_params": new_params,
-                }
-            ).execute()
+            await (
+                client.table("parameter_changes")
+                .insert(
+                    {
+                        "date": datetime.now(timezone.utc).isoformat(),
+                        "reason": f"[{strategy}] {reason}",
+                        "old_params": old_params,
+                        "new_params": new_params,
+                    }
+                )
+                .execute()
+            )
 
             # Update cache
             self._cache[strategy] = new_params

@@ -59,13 +59,13 @@ class SentimentTracker:
         return self.supabase
 
     async def get_sentiment_history(
-        self, ticker: str, days: Optional[int] = None
+        self, ticker: str, days: Optional[int] = None, reference_date: Optional[datetime] = None
     ) -> List[SentimentDataPoint]:
-        """Fetch sentiment history for a ticker."""
         client = await self._ensure_supabase()
 
         lookback = days or self.LOOKBACK_DAYS
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=lookback)
+        end_date = reference_date or datetime.now(timezone.utc)
+        cutoff_date = end_date - timedelta(days=lookback)
 
         try:
             response = await (
@@ -103,9 +103,10 @@ class SentimentTracker:
             logger.error(f"Failed to fetch sentiment history for {ticker}: {e}")
             return []
 
-    async def analyze_sentiment_trend(self, ticker: str) -> Optional[SentimentTrend]:
-        """Analyze sentiment trend for a ticker."""
-        datapoints = await self.get_sentiment_history(ticker)
+    async def analyze_sentiment_trend(
+        self, ticker: str, reference_date: Optional[datetime] = None
+    ) -> Optional[SentimentTrend]:
+        datapoints = await self.get_sentiment_history(ticker, reference_date=reference_date)
 
         if len(datapoints) < self.MIN_DATAPOINTS:
             return None
@@ -191,14 +192,16 @@ class SentimentTracker:
         return sentiment_change > self.INFLECTION_THRESHOLD or direction_reversed
 
     async def generate_sentiment_signals(
-        self, tickers: List[str], alpaca_client: Any = None
+        self,
+        tickers: List[str],
+        alpaca_client: Any = None,
+        reference_date: Optional[datetime] = None,
     ) -> List[Signal]:
-        """Generate trading signals based on sentiment trends."""
         signals = []
 
         for ticker in tickers:
             try:
-                trend = await self.analyze_sentiment_trend(ticker)
+                trend = await self.analyze_sentiment_trend(ticker, reference_date=reference_date)
                 if trend is None:
                     continue
 
