@@ -122,13 +122,16 @@ if pnl_pct <= Decimal(str(-params["stop_loss_pct"])):
 
 ### Missing Tables
 
-The following tables may need to be created manually in Supabase:
+**Status (2026-01-08):** ✅ All core tables now exist:
+- `system_logs` - Created (remote monitoring enabled)
+- `parameter_changes` - Created (adaptive optimizer ready)
+- `news_articles` - Exists (3,150+ articles)
+- `llm_analysis_log` - Exists (4,934+ analyses)
+
+The following optional tables may need creation:
 
 1. **orchestrator_decisions** - AI orchestrator decision log
    - Run: `database/create_orchestrator_table.sql`
-
-2. **news_articles** - News article archive (usually auto-created)
-3. **llm_analysis_log** - LLM sentiment analysis log (usually auto-created)
 
 **Quick Fix:**
 Run `database/complete_schema.sql` in Supabase SQL Editor to create all tables.
@@ -553,9 +556,14 @@ The system now logs internal events directly to Supabase for remote monitoring w
 - **Conservative Mode:** Reduces position sizes by 50% during high-risk macro days.
 - **Daily Circuit Breaker:** Halts all trading if the portfolio loses >3% in a single day.
 
-### AI Self-Reflection
-- **Reflection Agent:** Runs at market close to analyze winning/losing patterns.
-- **Lessons Learned:** Generates actionable insights stored in logs to refine strategy parameters over time.
+### AI Self-Improvement
+- **Reflection Agent:** Runs daily at market close to analyze winning/losing patterns.
+  - Generates actionable insights stored in logs to refine strategy parameters over time.
+- **Adaptive Optimizer:** Runs weekly (Sundays) to optimize momentum strategy parameters.
+  - Grid search over RSI/MACD/Volume thresholds based on last 30 days of trades
+  - Optimizes for Sharpe ratio
+  - Logs all parameter changes to `parameter_changes` table with performance metrics
+  - See `src/ml/adaptive_optimizer.py` for implementation
 
 ### API Stability
 - **YFinance Integration:** Momentum strategy exit checks now use `yfinance` to avoid Alpha Vantage rate limits (25/day).

@@ -15,6 +15,7 @@ from decimal import Decimal
 from .adapters.market_data_adapter import get_market_data_adapter
 from .agents.orchestrator import TradingOrchestrator
 from .agents.reflection_agent import ReflectionAgent
+from .ml.adaptive_optimizer import get_optimizer
 from .tools.economic_calendar import get_economic_calendar
 from .core.ml_logger import get_ml_logger
 from .core.performance_analyzer import analyze_daily_performance, generate_weekly_report
@@ -291,7 +292,16 @@ async def daily_trading_loop(
         reflection_agent = ReflectionAgent()
         await reflection_agent.run_daily_reflection()
 
+        # 9. Weekly Parameter Optimization (Sunday)
         if today.weekday() == 6:  # Sunday
+            logger.info("🔧 Running weekly parameter optimization...")
+            try:
+                optimizer = get_optimizer()
+                optimized_params = await optimizer.optimize_momentum_parameters()
+                logger.info(f"✅ Parameter optimization complete: {optimized_params}")
+            except Exception as e:
+                logger.error(f"Parameter optimization failed: {e}", exc_info=True)
+
             await generate_weekly_report()
 
         execution_summary["end_time"] = datetime.now(UTC)

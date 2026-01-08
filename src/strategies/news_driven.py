@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional, cast, Literal
 
+import yfinance as yf
+
 from ..core.indicators import calculate_sma
 from ..core.news_llm_logger import NewsLLMLogger
 from ..llm.sentiment_engine import SentimentEngine
@@ -38,8 +40,6 @@ class NewsSentimentStrategy:
         Returns:
             Signal object if a bullish opportunity is found, else None
         """
-        import yfinance as yf
-
         try:
             articles = await self.aggregator.fetch_news(ticker, days=2)
             if not articles:
@@ -73,92 +73,117 @@ class NewsSentimentStrategy:
             )
             analysis_id = await self.news_logger.log_llm_analysis(llm_log)
 
-            if (
+            # Check initial signal criteria
+            meets_criteria = (
                 prognosis.action == "BUY"
                 and prognosis.sentiment_score >= 0.7
                 and prognosis.impact == "HIGH"
-            ):
-                yf_ticker = yf.Ticker(ticker)
+            )
 
-                bars_1d = yf_ticker.history(period="1mo", interval="1d")
-                if bars_1d.empty:
-                    return None
-                bars_1d.columns = [c.lower() for c in bars_1d.columns]
+            if not meets_criteria:
+                reject_reasons = []
+                if prognosis.action != "BUY":
+                    reject_reasons.append(f"Action={prognosis.action}")
+                if prognosis.sentiment_score < 0.7:
+                    reject_reasons.append(f"Score={prognosis.sentiment_score:.2f}<0.7")
+                if prognosis.impact != "HIGH":
+                    reject_reasons.append(f"Impact={prognosis.impact}")
 
-                sma20_1d = calculate_sma(bars_1d, period=20).iloc[-1]
-                latest_price = Decimal(str(bars_1d["close"].iloc[-1]))
+                logger.debug(f"📊 {ticker} News Signal rejected: {', '.join(reject_reasons)}")
+                if analysis_id:
+                    await self.news_logger.update_signal_link(
+                        analysis_id=analysis_id,
+                        signal_id="",
+                        signal_approved=False,
+                        reject_reason=f"Initial criteria: {', '.join(reject_reasons)}",
+                    )
+                return None
 
-                if latest_price <= Decimal(str(sma20_1d)):
+            # At this point, meets_criteria is always True
+            yf_ticker = yf.Ticker(ticker)
+
+            bars_1d = yf_ticker.history(period="1mo", interval="1d")
+            if bars_1d.empty:
+                return None
+            bars_1d.columns = [c.lower() for c in bars_1d.columns]
+
+            sma20_1d = calculate_sma(bars_1d, period=20).iloc[-1]
+            latest_price = Decimal(str(bars_1d["close"].iloc[-1]))
+
+            if latest_price <= Decimal(str(sma20_1d)):
+                if analysis_id:
+                    await self.news_logger.update_signal_link(
+                        analysis_id=analysis_id,
+                        signal_id="",
+                        signal_approved=False,
+                        reject_reason=f"Daily: Price ${latest_price:.2f} <= SMA20 ${sma20_1d:.2f}",
+                    )
+                return None
+
+            bars_1h = yf_ticker.history(period="5d", interval="1h")
+            if not bars_1h.empty:
+                bars_1h.columns = [c.lower() for c in bars_1h.columns]
+                sma10_1h = calculate_sma(bars_1h, period=10).iloc[-1]
+                if latest_price <= Decimal(str(sma10_1h)):
                     if analysis_id:
                         await self.news_logger.update_signal_link(
                             analysis_id=analysis_id,
                             signal_id="",
                             signal_approved=False,
-                            reject_reason=f"Daily: Price ${latest_price:.2f} <= SMA20 ${sma20_1d:.2f}",
+                            reject_reason=f"Hourly: Price ${latest_price:.2f} <= SMA10 ${sma10_1h:.2f}",
                         )
                     return None
 
-                bars_1h = yf_ticker.history(period="5d", interval="1h")
-                if not bars_1h.empty:
-                    bars_1h.columns = [c.lower() for c in bars_1h.columns]
-                    sma10_1h = calculate_sma(bars_1h, period=10).iloc[-1]
-                    if latest_price <= Decimal(str(sma10_1h)):
-                        if analysis_id:
-                            await self.news_logger.update_signal_link(
-                                analysis_id=analysis_id,
-                                signal_id="",
-                                signal_approved=False,
-                                reject_reason=f"Hourly: Price ${latest_price:.2f} <= SMA10 ${sma10_1h:.2f}",
-                            )
-                        return None
+            from ..core.indicators import calculate_rsi
 
-                from ..core.indicators import calculate_rsi
+            bars_15m = yf_ticker.history(period="2d", interval="15m")
+            if not bars_15m.empty:
+                bars_15m.columns = [c.lower() for c in bars_15m.columns]
+                rsi_15m = calculate_rsi(bars_15m).iloc[-1]
+                if rsi_15m <= 50:
+                    if analysis_id:
+                        await self.news_logger.update_signal_link(
+                            analysis_id=analysis_id,
+                            signal_id="",
+                            signal_approved=False,
+                            reject_reason=f"15m: RSI {rsi_15m:.1f} <= 50",
+                        )
+                    return None
 
-                bars_15m = yf_ticker.history(period="2d", interval="15m")
-                if not bars_15m.empty:
-                    bars_15m.columns = [c.lower() for c in bars_15m.columns]
-                    rsi_15m = calculate_rsi(bars_15m).iloc[-1]
-                    if rsi_15m <= 50:
-                        if analysis_id:
-                            await self.news_logger.update_signal_link(
-                                analysis_id=analysis_id,
-                                signal_id="",
-                                signal_approved=False,
-                                reject_reason=f"15m: RSI {rsi_15m:.1f} <= 50",
-                            )
-                        return None
+            entry_price = latest_price
+            stop_loss = entry_price * Decimal("0.95")
+            take_profit = entry_price * Decimal("1.15")
 
-                entry_price = latest_price
-                stop_loss = entry_price * Decimal("0.95")
-                take_profit = entry_price * Decimal("1.15")
+            logger.info(
+                f"✅ {ticker} News Signal APPROVED: Score={prognosis.sentiment_score:.2f}, "
+                f"Impact={prognosis.impact}, Entry=${entry_price:.2f}"
+            )
 
-                signal = Signal(
-                    ticker=ticker,
-                    action="BUY",
-                    entry_price=entry_price,
-                    stop_loss=stop_loss,
-                    take_profit=take_profit,
-                    confidence=Decimal(str(prognosis.confidence)),
-                    strategy="news_sentiment",
-                    metadata={
-                        "sentiment_score": prognosis.sentiment_score,
-                        "impact": prognosis.impact,
-                        "reasoning": prognosis.reasoning,
-                        "source_count": len(articles),
-                        "llm_analysis_id": analysis_id,
-                    },
+            signal = Signal(
+                ticker=ticker,
+                action="BUY",
+                entry_price=entry_price,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                confidence=Decimal(str(prognosis.confidence)),
+                strategy="news_sentiment",
+                metadata={
+                    "sentiment_score": prognosis.sentiment_score,
+                    "impact": prognosis.impact,
+                    "reasoning": prognosis.reasoning,
+                    "source_count": len(articles),
+                    "llm_analysis_id": analysis_id,
+                },
+            )
+
+            if analysis_id:
+                await self.news_logger.update_signal_link(
+                    analysis_id=analysis_id,
+                    signal_id="",
+                    signal_approved=True,
+                    reject_reason=None,
                 )
-
-                if analysis_id:
-                    await self.news_logger.update_signal_link(
-                        analysis_id=analysis_id,
-                        signal_id="",
-                        signal_approved=True,
-                        reject_reason=None,
-                    )
-                return signal
-
-            return None
+            return signal
         except Exception as e:
             logger.error(f"Error processing news for {ticker}: {e}")
             return None
