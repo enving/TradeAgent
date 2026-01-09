@@ -310,10 +310,10 @@ async def daily_trading_loop(
         try:
             from .utils.order_reconciliation import reconcile_orders
             reconcile_stats = await reconcile_orders(lookback_hours=48)
-            if reconcile_stats["missing"] > 0:
+            if reconcile_stats["updated"] > 0 or reconcile_stats["missing"] > 0:
                 logger.warning(
-                    f"⚠️  Reconciliation found {reconcile_stats['missing']} missing orders, "
-                    f"logged {reconcile_stats['logged']} to Supabase"
+                    f"⚠️  Reconciliation fixed {reconcile_stats['updated']} trades with missing order IDs, "
+                    f"logged {reconcile_stats['missing']} completely missing orders"
                 )
             else:
                 logger.info("✅ All orders in sync")

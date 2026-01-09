@@ -27,15 +27,17 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
         Dictionary with reconciliation stats:
         {
             "checked": 50,      # Total orders checked
-            "missing": 3,       # Missing SELLs found
-            "logged": 3,        # Successfully logged
-            "errors": 0         # Errors during logging
+            "updated": 3,       # Existing trades updated with order IDs
+            "missing": 0,       # Completely missing orders found
+            "logged": 0,        # New trades logged
+            "errors": 0         # Errors during processing
         }
     """
     logger.info(f"🔄 Starting order reconciliation (lookback: {lookback_hours}h)")
 
     stats = {
         "checked": 0,
+        "updated": 0,
         "missing": 0,
         "logged": 0,
         "errors": 0,
@@ -60,7 +62,7 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
         client = await SupabaseClient.get_instance()
         response = (
             await client.table("trades")
-            .select("alpaca_order_id, ticker, action, created_at")
+            .select("id, alpaca_order_id, ticker, action, date, quantity, created_at")
             .gte("created_at", cutoff_time.isoformat())
             .execute()
         )
@@ -71,9 +73,28 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
             if trade.get("alpaca_order_id")
         }
 
-        logger.info(f"Found {len(existing_order_ids)} trades in Supabase")
+        # Build lookup for trades with null alpaca_order_id
+        # Key: (ticker, action, date_hour, quantity)
+        null_order_trades = {}
+        for trade in (response.data or []):
+            if not trade.get("alpaca_order_id"):
+                # Use hour-level precision for matching (avoid microsecond mismatches)
+                trade_date = datetime.fromisoformat(trade["date"].replace("Z", "+00:00"))
+                trade_hour = trade_date.replace(minute=0, second=0, microsecond=0)
+                key = (
+                    trade["ticker"],
+                    trade["action"],
+                    trade_hour.isoformat(),
+                    str(trade["quantity"])
+                )
+                null_order_trades[key] = trade
 
-        # 3. Find missing orders (especially SELLs)
+        logger.info(
+            f"Found {len(existing_order_ids)} trades with order IDs, "
+            f"{len(null_order_trades)} trades with null order IDs"
+        )
+
+        # 3. Find missing orders and update null order IDs
         for order in recent_orders:
             stats["checked"] += 1
 
@@ -85,7 +106,46 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
             if order["status"] != "filled":
                 continue
 
-            # Found missing order!
+            # Check if this matches a trade with null alpaca_order_id
+            order_date = datetime.fromisoformat(order["filled_at"].replace("Z", "+00:00"))
+            order_hour = order_date.replace(minute=0, second=0, microsecond=0)
+            action = "BUY" if order["side"] == "buy" else "SELL"
+
+            match_key = (
+                order["symbol"],
+                action,
+                order_hour.isoformat(),
+                str(order["filled_qty"])
+            )
+
+            # If we find a matching trade with null order ID, UPDATE it
+            if match_key in null_order_trades:
+                existing_trade = null_order_trades[match_key]
+                try:
+                    logger.info(
+                        f"🔄 Updating existing {action} trade with missing order ID: "
+                        f"{order['symbol']} (Trade ID: {existing_trade['id']}, "
+                        f"Order ID: {order['id']})"
+                    )
+
+                    # Update the trade with the alpaca_order_id
+                    await client.table("trades").update({
+                        "alpaca_order_id": order["id"]
+                    }).eq("id", existing_trade["id"]).execute()
+
+                    stats["updated"] += 1
+                    logger.info(f"✅ Updated trade with order ID: {order['id']}")
+                    continue
+
+                except Exception as e:
+                    stats["errors"] += 1
+                    logger.error(
+                        f"Failed to update trade {existing_trade['id']} with order ID: {e}",
+                        exc_info=True,
+                    )
+                    continue
+
+            # Found completely missing order!
             stats["missing"] += 1
 
             logger.warning(
@@ -170,6 +230,7 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
         logger.info(
             f"🔄 Reconciliation complete: "
             f"{stats['checked']} checked, "
+            f"{stats['updated']} updated, "
             f"{stats['missing']} missing, "
             f"{stats['logged']} logged, "
             f"{stats['errors']} errors"
