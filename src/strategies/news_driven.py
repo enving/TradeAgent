@@ -7,8 +7,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional, cast, Literal
 
-import yfinance as yf
-
 from ..core.indicators import calculate_sma
 from ..core.news_llm_logger import NewsLLMLogger
 from ..llm.sentiment_engine import SentimentEngine
@@ -100,10 +98,19 @@ class NewsSentimentStrategy:
                 return None
 
             # At this point, meets_criteria is always True
+            import yfinance as yf
+
             yf_ticker = yf.Ticker(ticker)
 
             bars_1d = yf_ticker.history(period="1mo", interval="1d")
             if bars_1d.empty:
+                if analysis_id:
+                    await self.news_logger.update_signal_link(
+                        analysis_id=analysis_id,
+                        signal_id="",
+                        signal_approved=False,
+                        reject_reason="No price data available",
+                    )
                 return None
             bars_1d.columns = [c.lower() for c in bars_1d.columns]
 

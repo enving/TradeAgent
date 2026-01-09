@@ -428,3 +428,66 @@ class AlpacaMCPClient:
         except Exception as e:
             logger.error(f"Failed to cancel order {order_id}: {e}")
             raise
+
+    async def get_recent_orders(self, limit: int = 100) -> list[dict[str, Any]]:
+        """Get recent orders from Alpaca.
+
+        Retrieves filled orders to reconcile with Supabase logs.
+
+        Args:
+            limit: Maximum number of orders to retrieve (default: 100)
+
+        Returns:
+            List of order dicts with relevant fields
+
+        Example return:
+            [{
+                "id": "abc123",
+                "symbol": "AAPL",
+                "side": "sell",
+                "qty": "10",
+                "filled_qty": "10",
+                "filled_avg_price": "150.50",
+                "status": "filled",
+                "submitted_at": "2026-01-08T15:30:00Z",
+                "filled_at": "2026-01-08T15:31:26Z",
+            }, ...]
+        """
+        await ALPACA_LIMITER.acquire()
+
+        try:
+            from alpaca.trading.requests import GetOrdersRequest
+            from alpaca.trading.enums import QueryOrderStatus
+
+            logger.info(f"Fetching last {limit} orders from Alpaca")
+
+            # Get closed orders (filled, canceled, expired)
+            request = GetOrdersRequest(
+                status=QueryOrderStatus.CLOSED,
+                limit=limit,
+            )
+
+            orders = self.trading_client.get_orders(filter=request)
+
+            # Convert to dict format
+            order_list = []
+            for order in orders:
+                order_list.append({
+                    "id": str(order.id),
+                    "symbol": order.symbol,
+                    "side": order.side.value,  # 'buy' or 'sell'
+                    "qty": str(order.qty),
+                    "filled_qty": str(order.filled_qty) if order.filled_qty else "0",
+                    "filled_avg_price": str(order.filled_avg_price) if order.filled_avg_price else None,
+                    "status": order.status.value,  # 'filled', 'canceled', etc.
+                    "submitted_at": order.submitted_at.isoformat() if order.submitted_at else None,
+                    "filled_at": order.filled_at.isoformat() if order.filled_at else None,
+                })
+
+            logger.info(f"Retrieved {len(order_list)} orders from Alpaca")
+
+            return order_list
+
+        except Exception as e:
+            logger.error(f"Failed to get orders from Alpaca: {e}")
+            raise

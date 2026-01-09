@@ -263,7 +263,7 @@ async def daily_trading_loop(
             try:
                 should_exit, reason = await check_exit_conditions(position, alpaca)
                 if should_exit:
-                    await alpaca.close_position(position.symbol)
+                    # Prepare trade data BEFORE closing (in case close fails)
                     exit_reason = cast(
                         Literal["stop_loss", "take_profit", "technical_exit", "rebalance"] | None,
                         reason,
@@ -280,8 +280,21 @@ async def daily_trading_loop(
                         pnl_pct=position.unrealized_pnl_pct,
                         strategy="momentum",
                     )
+
+                    # Try to close position
+                    try:
+                        await alpaca.close_position(position.symbol)
+                        logger.info(f"✅ Closed position: {position.symbol}")
+                    except Exception as close_error:
+                        # Position might already be closed - that's OK, log it anyway
+                        logger.warning(
+                            f"Could not close {position.symbol} (may already be closed): {close_error}"
+                        )
+
+                    # Always log the trade (even if close failed)
                     await SupabaseClient.log_trade(exit_trade)
                     execution_summary["positions_closed"] += 1
+
             except Exception as e:
                 logger.error(f"Failed to check exit for {position.symbol}: {e}")
 
@@ -292,7 +305,22 @@ async def daily_trading_loop(
         reflection_agent = ReflectionAgent()
         await reflection_agent.run_daily_reflection()
 
-        # 9. Weekly Parameter Optimization (Sunday)
+        # 9. Order Reconciliation (daily after market close)
+        logger.info("🔄 Running order reconciliation...")
+        try:
+            from .utils.order_reconciliation import reconcile_orders
+            reconcile_stats = await reconcile_orders(lookback_hours=48)
+            if reconcile_stats["missing"] > 0:
+                logger.warning(
+                    f"⚠️  Reconciliation found {reconcile_stats['missing']} missing orders, "
+                    f"logged {reconcile_stats['logged']} to Supabase"
+                )
+            else:
+                logger.info("✅ All orders in sync")
+        except Exception as e:
+            logger.error(f"Order reconciliation failed: {e}", exc_info=True)
+
+        # 10. Weekly Parameter Optimization (Sunday)
         if today.weekday() == 6:  # Sunday
             logger.info("🔧 Running weekly parameter optimization...")
             try:

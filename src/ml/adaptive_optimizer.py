@@ -36,7 +36,9 @@ class AdaptiveOptimizer:
         Returns:
             Optimal parameters based on Sharpe ratio
         """
-        logger.info(f"Starting momentum parameter optimization (lookback: {self.lookback_days} days)")
+        logger.info(
+            f"Starting momentum parameter optimization (lookback: {self.lookback_days} days)"
+        )
 
         # Define parameter grid to test
         param_grid = {
@@ -142,18 +144,20 @@ class AdaptiveOptimizer:
             )
 
         # Log parameter change to database
-        await self._log_parameter_change(
+        success = await self._log_parameter_change(
             strategy="momentum",
             old_params=self._get_default_momentum_params(),
             new_params=best_params,
             reason=f"Adaptive optimization (Sharpe: {best_sharpe:.3f})",
         )
+        if not success:
+            logger.warning(
+                "Parameter change was not logged to database (running with new params in memory)"
+            )
 
         return best_params
 
-    async def _fetch_recent_trades(
-        self, strategy: str, lookback_days: int
-    ) -> List[Dict[str, Any]]:
+    async def _fetch_recent_trades(self, strategy: str, lookback_days: int) -> List[Dict[str, Any]]:
         """Fetch recent trades for analysis.
 
         Args:
@@ -298,7 +302,7 @@ class AdaptiveOptimizer:
         old_params: Dict[str, Any],
         new_params: Dict[str, Any],
         reason: str,
-    ) -> None:
+    ) -> bool:
         """Log parameter change to database.
 
         Args:
@@ -306,23 +310,32 @@ class AdaptiveOptimizer:
             old_params: Previous parameters
             new_params: New parameters
             reason: Reason for change
+
+        Returns:
+            True if successful, False otherwise
         """
         try:
             client = await SupabaseClient.get_instance()
 
-            await client.table("parameter_changes").insert(
-                {
-                    "date": datetime.now(timezone.utc).isoformat(),
-                    "reason": f"[{strategy}] {reason}",
-                    "old_params": old_params,
-                    "new_params": new_params,
-                }
-            ).execute()
+            await (
+                client.table("parameter_changes")
+                .insert(
+                    {
+                        "date": datetime.now(timezone.utc).isoformat(),
+                        "reason": f"[{strategy}] {reason}",
+                        "old_params": old_params,
+                        "new_params": new_params,
+                    }
+                )
+                .execute()
+            )
 
             logger.info(f"Parameter change logged for {strategy}")
+            return True
 
         except Exception as e:
             logger.error(f"Failed to log parameter change: {e}")
+            return False
 
 
 # Global singleton
