@@ -38,7 +38,7 @@ class Portfolio(BaseModel):
         positions: List of open positions
     """
 
-    cash: Decimal = Field(description="Available cash", ge=0)
+    cash: Decimal = Field(description="Available cash")  # Can be negative if using margin
     portfolio_value: Decimal = Field(description="Total portfolio value", ge=0)
     buying_power: Decimal = Field(description="Available buying power", ge=0)
     equity: Decimal = Field(description="Total equity value", ge=0)

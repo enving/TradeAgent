@@ -35,9 +35,9 @@ class RSSFeedMonitor:
         "benzinga": "https://www.benzinga.com/feed",
         "marketwatch": "https://www.marketwatch.com/rss/realtimeheadlines",
         "seeking_alpha": "https://seekingalpha.com/feed.xml",
-        "cnbc_business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=401&id=10001147",
-        "investors_daily": "https://www.investors.com/feed/",
         "pr_newswire": "https://www.prnewswire.com/rss/news-releases-list.rss",
+        # "cnbc_business": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=401&id=10001147",  # Broken/403
+        # "investors_daily": "https://www.investors.com/feed/",  # 403 Forbidden (Cloudflare)
     }
 
     # Keywords that trigger immediate scans
@@ -92,7 +92,7 @@ class RSSFeedMonitor:
         self.recent_articles = deque(maxlen=100)
 
         # Polling interval (seconds)
-        self.poll_interval = 60  # Check every minute
+        self.poll_interval = 300  # Check every 5 minutes to avoid rate limits
 
         logger.info(f"RSS Feed Monitor initialized for {len(watchlist)} tickers")
 
@@ -102,7 +102,10 @@ class RSSFeedMonitor:
         """Fetch and parse RSS feed."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            async with session.get(url, timeout=timeout) as response:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            async with session.get(url, timeout=timeout, headers=headers) as response:
                 if response.status != 200:
                     logger.warning(f"Failed to fetch {feed_name}: HTTP {response.status}")
                     return []

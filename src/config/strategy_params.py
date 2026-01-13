@@ -72,7 +72,7 @@ class StrategyParameters:
                 await client.table("parameter_changes")
                 .select("new_params")
                 .ilike("reason", f"%{strategy}%")
-                .order("date", desc=True)
+                .order("changed_at", desc=True)
                 .limit(1)
                 .execute()
             )
@@ -112,7 +112,8 @@ class StrategyParameters:
                 client.table("parameter_changes")
                 .insert(
                     {
-                        "date": datetime.now(timezone.utc).isoformat(),
+                        "changed_at": datetime.now(timezone.utc).isoformat(),
+                        "strategy": strategy,
                         "reason": f"[{strategy}] {reason}",
                         "old_params": old_params,
                         "new_params": new_params,

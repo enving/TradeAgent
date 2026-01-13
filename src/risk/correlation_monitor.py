@@ -27,32 +27,27 @@ SECTOR_MAP = {
     "AMD": "Technology",
     "AVGO": "Technology",
     "NFLX": "Technology",
-
     # Finance
     "JPM": "Finance",
     "BAC": "Finance",
     "WFC": "Finance",
     "GS": "Finance",
     "MS": "Finance",
-
     # Energy
     "XOM": "Energy",
     "CVX": "Energy",
     "COP": "Energy",
-
     # Healthcare
     "LLY": "Healthcare",
     "JNJ": "Healthcare",
     "PFE": "Healthcare",
     "UNH": "Healthcare",
-
     # Consumer
     "TSLA": "Consumer",
     "AMZN": "Consumer",
     "KO": "Consumer",
     "PEP": "Consumer",
     "MCD": "Consumer",
-
     # ETFs
     "VTI": "Broad Market",
     "VGK": "International",
@@ -78,6 +73,117 @@ class CorrelationMonitor:
         """
         self.lookback_days = lookback_days
         self._price_cache: Dict[str, pd.DataFrame] = {}
+        self._sector_cache: Dict[str, str] = {}  # Cache for dynamically fetched sectors
+
+    async def get_sector(self, ticker: str) -> str:
+        """Get sector for a ticker (cached).
+
+        Priorities:
+        1. Hardcoded SECTOR_MAP
+        2. In-memory cache
+        3. yfinance API fetch
+
+        Args:
+            ticker: Stock symbol
+
+        Returns:
+            Sector name or "Unknown"
+        """
+        # 1. Check hardcoded map
+        if ticker in SECTOR_MAP:
+            return SECTOR_MAP[ticker]
+
+        # 2. Check cache
+        if ticker in self._sector_cache:
+            return self._sector_cache[ticker]
+
+        # 3. Fetch from yfinance
+        try:
+            logger.debug(f"Fetching sector for {ticker} from yfinance...")
+            # Use run_in_executor to avoid blocking async loop
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+
+            def fetch_info():
+                try:
+                    return yf.Ticker(ticker).info
+                except Exception:
+                    return {}
+
+            info = await loop.run_in_executor(None, fetch_info)
+            sector = info.get("sector", "Unknown")
+
+            # Normalize sector names
+            if sector == "Technology":
+                sector = "Technology"
+            elif sector == "Financial Services":
+                sector = "Finance"
+            elif sector == "Consumer Cyclical":
+                sector = "Consumer"
+            elif sector == "Consumer Defensive":
+                sector = "Consumer"
+            elif sector == "Healthcare":
+                sector = "Healthcare"
+
+            logger.info(f"Fetched sector for {ticker}: {sector}")
+            self._sector_cache[ticker] = sector
+            return sector
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch sector for {ticker}: {e}")
+            return "Unknown"
+
+    async def _check_sector_concentration(
+        self,
+        new_ticker: str,
+        new_position_value: Decimal,
+        current_positions: List[Position],
+        portfolio_value: Decimal,
+    ) -> Tuple[bool, Optional[str]]:
+        """Check if adding new position would violate sector limits.
+
+        Args:
+            new_ticker: Ticker to add
+            new_position_value: Dollar value of new position
+            current_positions: Current positions
+            portfolio_value: Total portfolio value
+
+        Returns:
+            Tuple of (approved, reason)
+        """
+        # Get sector for new ticker
+        new_sector = await self.get_sector(new_ticker)
+
+        # Calculate current sector allocations
+        sector_values: Dict[str, Decimal] = {}
+
+        for pos in current_positions:
+            sector = await self.get_sector(pos.symbol)
+            position_value = pos.market_value
+            sector_values[sector] = sector_values.get(sector, Decimal("0")) + position_value
+
+        # Add new position to sector
+        sector_values[new_sector] = sector_values.get(new_sector, Decimal("0")) + new_position_value
+
+        # Check if any sector exceeds limit
+        for sector, value in sector_values.items():
+            if sector == "Unknown":
+                continue
+
+            allocation = float(value / portfolio_value) if portfolio_value > 0 else 0
+
+            # CRITICAL FIX: Only block if:
+            # 1. The sector exceeds limit AND
+            # 2. We are ADDING to this specific sector
+            # This allows buying other sectors to dilute the concentration
+            if allocation > self.MAX_SECTOR_ALLOCATION and sector == new_sector:
+                return False, (
+                    f"Sector concentration limit: {sector} would be {allocation:.1%} "
+                    f"(max {self.MAX_SECTOR_ALLOCATION:.0%})"
+                )
+
+        return True, None
 
     async def check_new_signal(
         self,
@@ -97,13 +203,12 @@ class CorrelationMonitor:
         """
         ticker = signal.ticker
 
-        # Skip correlation check if no current positions
         if len(current_positions) == 0:
             return True, None
 
-        # 1. Check sector concentration
-        sector_ok, sector_reason = self._check_sector_concentration(
-            ticker, signal.entry_price * Decimal("10"),  # Assume 10 shares
+        sector_ok, sector_reason = await self._check_sector_concentration(
+            ticker,
+            signal.entry_price * Decimal("10"),  # Assume 10 shares
             current_positions,
             portfolio_value,
         )
@@ -112,61 +217,12 @@ class CorrelationMonitor:
             logger.warning(f"Signal rejected for {ticker}: {sector_reason}")
             return False, sector_reason
 
-        # 2. Check correlation with existing positions
         if len(current_positions) >= self.MIN_POSITIONS_FOR_CORRELATION:
-            corr_ok, corr_reason = await self._check_correlation(
-                ticker, current_positions
-            )
+            corr_ok, corr_reason = await self._check_correlation(ticker, current_positions)
 
             if not corr_ok:
                 logger.warning(f"Signal rejected for {ticker}: {corr_reason}")
                 return False, corr_reason
-
-        return True, None
-
-    def _check_sector_concentration(
-        self,
-        new_ticker: str,
-        new_position_value: Decimal,
-        current_positions: List[Position],
-        portfolio_value: Decimal,
-    ) -> Tuple[bool, Optional[str]]:
-        """Check if adding new position would violate sector limits.
-
-        Args:
-            new_ticker: Ticker to add
-            new_position_value: Dollar value of new position
-            current_positions: Current positions
-            portfolio_value: Total portfolio value
-
-        Returns:
-            Tuple of (approved, reason)
-        """
-        # Get sector for new ticker
-        new_sector = SECTOR_MAP.get(new_ticker, "Unknown")
-
-        # Calculate current sector allocations
-        sector_values: Dict[str, Decimal] = {}
-
-        for pos in current_positions:
-            sector = SECTOR_MAP.get(pos.symbol, "Unknown")
-            position_value = pos.market_value
-            sector_values[sector] = sector_values.get(sector, Decimal("0")) + position_value
-
-        # Add new position to sector
-        sector_values[new_sector] = (
-            sector_values.get(new_sector, Decimal("0")) + new_position_value
-        )
-
-        # Check if any sector exceeds limit
-        for sector, value in sector_values.items():
-            allocation = float(value / portfolio_value) if portfolio_value > 0 else 0
-
-            if allocation > self.MAX_SECTOR_ALLOCATION:
-                return False, (
-                    f"Sector concentration limit: {sector} would be {allocation:.1%} "
-                    f"(max {self.MAX_SECTOR_ALLOCATION:.0%})"
-                )
 
         return True, None
 
@@ -268,9 +324,7 @@ class CorrelationMonitor:
             logger.error(f"Failed to fetch price history for {ticker}: {e}")
             return None
 
-    def _calculate_correlation(
-        self, series1: pd.Series, series2: pd.Series
-    ) -> Optional[float]:
+    def _calculate_correlation(self, series1: pd.Series, series2: pd.Series) -> Optional[float]:
         """Calculate correlation between two price series.
 
         Args:
@@ -296,9 +350,7 @@ class CorrelationMonitor:
             logger.error(f"Error calculating correlation: {e}")
             return None
 
-    def get_portfolio_correlation_matrix(
-        self, positions: List[Position]
-    ) -> Optional[pd.DataFrame]:
+    def get_portfolio_correlation_matrix(self, positions: List[Position]) -> Optional[pd.DataFrame]:
         """Calculate correlation matrix for entire portfolio.
 
         Args:
