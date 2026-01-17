@@ -321,7 +321,8 @@ class AdaptiveOptimizer:
                 client.table("parameter_changes")
                 .insert(
                     {
-                        "date": datetime.now(timezone.utc).isoformat(),
+                        "changed_at": datetime.now(timezone.utc).isoformat(),
+                        "strategy": strategy,
                         "reason": f"[{strategy}] {reason}",
                         "old_params": old_params,
                         "new_params": new_params,
