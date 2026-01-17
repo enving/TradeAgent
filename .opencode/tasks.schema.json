@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Project Tasks Schema",
+  "description": "Structured task and feature tracking to prevent hallucinations",
+  "type": "object",
+  "required": ["meta", "tasks", "features", "rules"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["version", "last_updated", "last_agent"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_agent": {
+          "type": "string"
+        },
+        "project_phase": {
+          "type": "string",
+          "enum": ["planning", "development", "testing", "production"]
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status", "priority", "created"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^TASK-\\d{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "in_progress", "completed", "blocked"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "requires_review": {
+            "type": "boolean"
+          },
+          "reviewed_by": {
+            "type": ["string", "null"]
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^FEAT-\\d{3}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["planned", "in_development", "implemented", "reviewed", "deployed"]
+          },
+          "requires_review": {
+            "type": "boolean"
+          },
+          "reviewed_by": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "required": ["review_policy", "hallucination_prevention"],
+      "properties": {
+        "review_policy": {
+          "type": "string"
+        },
+        "hallucination_prevention": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
