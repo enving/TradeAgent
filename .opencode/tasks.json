@@ -2,7 +2,7 @@
   "$schema": "./tasks.schema.json",
   "meta": {
     "version": "1.1.0",
-    "last_updated": "2026-01-17T12:00:00Z",
+    "last_updated": "2026-01-17T14:30:00Z",
     "last_agent": "opencode",
     "project_phase": "maintenance"
   },
@@ -31,6 +31,49 @@
       "blocked_by": [],
       "blocks": [],
       "docs_updated": true
+    },
+    {
+      "id": "TASK-002",
+      "title": "Enable Orchestrator Logs",
+      "status": "pending",
+      "priority": "high",
+      "category": "database",
+      "created": "2026-01-17",
+      "updated": "2026-01-17",
+      "assigned_agent": null,
+      "requires_review": false,
+      "reviewed_by": null,
+      "review_notes": null,
+      "description": "Execute database/create_orchestrator_table.sql in Supabase to enable AI orchestrator decision logging.",
+      "acceptance_criteria": [
+        "Table orchestrator_decisions exists in Supabase"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": false
+    },
+    {
+      "id": "TASK-003",
+      "title": "E2E Testing for Adaptive Optimizer",
+      "status": "pending",
+      "priority": "high",
+      "category": "testing",
+      "created": "2026-01-17",
+      "updated": "2026-01-17",
+      "assigned_agent": null,
+      "requires_review": false,
+      "reviewed_by": null,
+      "review_notes": null,
+      "description": "Run end-to-end tests for the Adaptive Optimizer to ensure it correctly updates parameters in production.",
+      "acceptance_criteria": [
+        "Test script runs successfully",
+        "Parameters are updated in parameter_changes table"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": false
     }
   ],
   "features": [

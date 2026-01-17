@@ -2,6 +2,16 @@
 
 This document contains important information for AI agents working on this project.
 
+## Agent History
+
+### 2026-01-17: opencode (Checkpoint & Documentation)
+- **Tasks**:
+  - Established a clean documentation state with PRD.md and tasks.json.
+  - Synced documentation between PRD, tasks.json, and next-steps.md.
+  - Cleaned up repository (removed caches and logs).
+  - Created a structured handoff for the next session.
+- **Status**: Documentation checkpoint completed. Ready for review by next agent.
+
 ## SSH Access to Raspberry Pi
 
 ### For Human Users
