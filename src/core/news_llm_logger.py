@@ -127,6 +127,10 @@ class NewsLLMLogger:
         try:
             client = await SupabaseClient.get_instance()
 
+            # Ensure empty strings are treated as None for UUID fields
+            if not signal_id:
+                signal_id = None
+
             data = {
                 "signal_id": signal_id,
                 "signal_generated": True if signal_id else False,
