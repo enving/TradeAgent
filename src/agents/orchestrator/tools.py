@@ -28,8 +28,7 @@ class OrchestratorTools:
             self.llm_client = None
         else:
             logger.info(
-                f"Initializing LLM client: provider={config.LLM_PROVIDER}, "
-                f"model={config.LLM_MODEL}"
+                f"Initializing LLM client: provider={config.LLM_PROVIDER}, model={config.LLM_MODEL}"
             )
             self.llm_client = AsyncOpenAI(
                 api_key=config.LLM_API_KEY,
@@ -106,11 +105,13 @@ class OrchestratorTools:
                     }
 
             # Calculate average market change
-            avg_change = sum(d["change_pct"] for d in market_data.values() if d.get("change_pct")) / len(
-                market_data
-            )
+            avg_change = sum(
+                d["change_pct"] for d in market_data.values() if d.get("change_pct")
+            ) / len(market_data)
 
-            market_data["overall_sentiment"] = "BULLISH" if avg_change > 0.5 else "BEARISH" if avg_change < -0.5 else "NEUTRAL"
+            market_data["overall_sentiment"] = (
+                "BULLISH" if avg_change > 0.5 else "BEARISH" if avg_change < -0.5 else "NEUTRAL"
+            )
             market_data["avg_change_pct"] = avg_change
 
             return market_data
@@ -198,10 +199,10 @@ Confidence: {signal.confidence}
 Strategy: {signal.strategy}
 Risk/Reward: {(signal.take_profit - signal.entry_price) / (signal.entry_price - signal.stop_loss):.2f}
 Technical Indicators:
-  - RSI: {signal.rsi if hasattr(signal, 'rsi') else 'N/A'}
-  - MACD: {signal.macd_histogram if hasattr(signal, 'macd_histogram') else 'N/A'}
-  - Volume Ratio: {signal.volume_ratio if hasattr(signal, 'volume_ratio') else 'N/A'}
-Metadata: {signal.metadata if hasattr(signal, 'metadata') else {}}
+  - RSI: {signal.rsi if hasattr(signal, "rsi") else "N/A"}
+  - MACD: {signal.macd_histogram if hasattr(signal, "macd_histogram") else "N/A"}
+  - Volume Ratio: {signal.volume_ratio if hasattr(signal, "volume_ratio") else "N/A"}
+Metadata: {signal.metadata if hasattr(signal, "metadata") else {}}
 """.strip()
 
     def format_portfolio_for_llm(self, portfolio: Portfolio, positions: List[Position]) -> str:
@@ -228,7 +229,7 @@ Cash: ${portfolio.cash}
 Buying Power: ${portfolio.buying_power}
 Number of Positions: {len(positions)}
 Positions:
-{positions_str if positions_str else '  (No positions)'}
+{positions_str if positions_str else "  (No positions)"}
 """.strip()
 
     async def get_strategy_performance(self, days: int = 30) -> Dict[str, Dict[str, float]]:
@@ -294,18 +295,12 @@ Positions:
             reasoning: LLM reasoning
         """
         try:
-            client = await SupabaseClient.get_instance()
-
-            await client.table("orchestrator_decisions").insert(
-                {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "decision_type": decision_type,
-                    "input_data": input_data,
-                    "output_data": output_data,
-                    "reasoning": reasoning,
-                }
-            ).execute()
-
+            await SupabaseClient.log_orchestrator_decision(
+                decision_type=decision_type,
+                input_data=input_data,
+                output_data=output_data,
+                reasoning=reasoning,
+            )
             logger.debug(f"Logged orchestrator decision: {decision_type}")
 
         except Exception as e:

@@ -12,6 +12,7 @@ from ..models.performance import DailyPerformance, ParameterChange, StrategyMetr
 from ..models.trade import Signal, Trade
 from ..utils.config import config
 
+
 class SupabaseClient:
     """Singleton async Supabase client for database operations."""
 
@@ -23,6 +24,7 @@ class SupabaseClient:
         if cls._instance is None:
             # Import here to avoid early config loading issues
             from supabase import acreate_client
+
             cls._instance = await acreate_client(config.SUPABASE_URL, config.SUPABASE_KEY)
         return cls._instance
 
@@ -38,7 +40,7 @@ class SupabaseClient:
         """Log a system event to the database with console fallback."""
         try:
             client = await cls.get_instance()
-            data = {
+            data: Dict[str, Any] = {
                 "level": level.upper(),
                 "module": module,
                 "message": message,
@@ -52,7 +54,9 @@ class SupabaseClient:
             await client.table("system_logs").insert(data).execute()
         except Exception as e:
             # Fallback to stderr if DB logging fails
-            print(f"FAILED TO LOG TO DB: {level} [{module}] {message} (Error: {e})", file=sys.stderr)
+            print(
+                f"FAILED TO LOG TO DB: {level} [{module}] {message} (Error: {e})", file=sys.stderr
+            )
 
     @classmethod
     async def log_trade(cls, trade: Trade) -> dict:
@@ -122,11 +126,14 @@ class SupabaseClient:
         data_dict = ml_data.model_dump(exclude_none=True, exclude={"id", "created_at"})
         if "timestamp" in data_dict:
             data_dict["timestamp"] = data_dict["timestamp"].isoformat()
-        
+
         def convert_decimals(obj):
-            if isinstance(obj, Decimal): return float(obj)
-            if isinstance(obj, dict): return {k: convert_decimals(v) for k, v in obj.items()}
-            if isinstance(obj, list): return [convert_decimals(i) for i in obj]
+            if isinstance(obj, Decimal):
+                return float(obj)
+            if isinstance(obj, dict):
+                return {k: convert_decimals(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [convert_decimals(i) for i in obj]
             return obj
 
         for key, value in data_dict.items():
@@ -135,17 +142,50 @@ class SupabaseClient:
         return getattr(response, "data", {})
 
     @classmethod
+    async def log_orchestrator_decision(
+        cls,
+        decision_type: str,
+        input_data: Dict[str, Any],
+        output_data: Dict[str, Any],
+        reasoning: str,
+    ) -> dict:
+        """Log orchestrator decision to database."""
+        client = await cls.get_instance()
+        data = {
+            "timestamp": datetime.now(UTC).isoformat(),
+            "decision_type": decision_type,
+            "input_data": input_data,
+            "output_data": output_data,
+            "reasoning": reasoning,
+        }
+        response = await client.table("orchestrator_decisions").insert(data).execute()
+        return getattr(response, "data", {})
+
+    @classmethod
     async def get_recent_trades(cls, days: int = 5) -> list:
         client = await cls.get_instance()
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
-        response = await client.table("trades").select("*").gte("date", cutoff_date).order("date", desc=True).execute()
+        response = (
+            await client.table("trades")
+            .select("*")
+            .gte("date", cutoff_date)
+            .order("date", desc=True)
+            .execute()
+        )
         return getattr(response, "data", [])
 
     @classmethod
     async def get_strategy_performance(cls, strategy: str, days: int = 5) -> list:
         client = await cls.get_instance()
         cutoff_date = (datetime.now() - timedelta(days=days)).date().isoformat()
-        response = await client.table("strategy_metrics").select("*").eq("strategy", strategy).gte("date", cutoff_date).order("date", desc=True).execute()
+        response = (
+            await client.table("strategy_metrics")
+            .select("*")
+            .eq("strategy", strategy)
+            .gte("date", cutoff_date)
+            .order("date", desc=True)
+            .execute()
+        )
         return getattr(response, "data", [])
 
     @classmethod
@@ -154,7 +194,14 @@ class SupabaseClient:
         target_date = datetime.now() - timedelta(days=days_ago)
         start = target_date.replace(hour=0, minute=0, second=0).isoformat()
         end = target_date.replace(hour=23, minute=59, second=59).isoformat()
-        response = await client.table("ml_training_data").select("*").eq("is_labeled", False).gte("timestamp", start).lte("timestamp", end).execute()
+        response = (
+            await client.table("ml_training_data")
+            .select("*")
+            .eq("is_labeled", False)
+            .gte("timestamp", start)
+            .lte("timestamp", end)
+            .execute()
+        )
         return getattr(response, "data", [])
 
     @classmethod
@@ -164,16 +211,23 @@ class SupabaseClient:
         if "label_timestamp" in label_dict:
             label_dict["label_timestamp"] = label_dict["label_timestamp"].isoformat()
         for key, value in label_dict.items():
-            if isinstance(value, Decimal): label_dict[key] = str(value)
+            if isinstance(value, Decimal):
+                label_dict[key] = str(value)
         label_dict["is_labeled"] = True
-        response = await client.table("ml_training_data").update(label_dict).eq("id", record_id).execute()
+        response = (
+            await client.table("ml_training_data").update(label_dict).eq("id", record_id).execute()
+        )
         return getattr(response, "data", {})
 
     @classmethod
-    async def get_ml_training_dataset(cls, is_labeled: bool = True, limit: int | None = None) -> list:
+    async def get_ml_training_dataset(
+        cls, is_labeled: bool = True, limit: int | None = None
+    ) -> list:
         client = await cls.get_instance()
         query = client.table("ml_training_data").select("*")
-        if is_labeled: query = query.eq("is_labeled", True)
-        if limit: query = query.limit(limit)
+        if is_labeled:
+            query = query.eq("is_labeled", True)
+        if limit:
+            query = query.limit(limit)
         response = await query.order("timestamp", desc=True).execute()
         return getattr(response, "data", [])
