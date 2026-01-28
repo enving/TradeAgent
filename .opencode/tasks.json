@@ -2,9 +2,9 @@
   "$schema": "./tasks.schema.json",
   "meta": {
     "version": "1.1.0",
-    "last_updated": "2026-01-17T14:30:00Z",
-    "last_agent": "opencode",
-    "project_phase": "maintenance"
+    "last_updated": "2026-01-27T21:00:00Z",
+    "last_agent": "antigravity",
+    "project_phase": "production"
   },
   "tasks": [
     {
@@ -74,13 +74,35 @@
       "blocked_by": [],
       "blocks": [],
       "docs_updated": false
+    },
+    {
+      "id": "TASK-004",
+      "title": "Fix Missing Logs & Invalid UUID Error",
+      "status": "completed",
+      "priority": "critical",
+      "category": "bugfix",
+      "created": "2026-01-27",
+      "updated": "2026-01-27",
+      "assigned_agent": "antigravity",
+      "requires_review": false,
+      "reviewed_by": null,
+      "review_notes": "Fixed invalid UUID syntax in news_llm_logger.py and resumed Raspberry Pi logging.",
+      "description": "Diagnosed missing logs (Pi was offline/outdated) and fixed CRITICAL error where empty strings were passed as UUIDs to Supabase.",
+      "acceptance_criteria": [
+        "Pi sends logs to Supabase",
+        "Invalid UUID error is resolved"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": true
     }
   ],
   "features": [
     {
       "id": "FEAT-001",
       "title": "Momentum Strategy",
-      "status": "completed",
+      "status": "deployed",
       "version": "1.0.0",
       "created": "2025-12-01",
       "completed": "2025-12-30",
@@ -101,7 +123,7 @@
     {
       "id": "FEAT-005",
       "title": "Adaptive Optimizer",
-      "status": "completed",
+      "status": "deployed",
       "version": "1.1.0",
       "created": "2026-01-05",
       "completed": "2026-01-15",
