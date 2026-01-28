@@ -46,6 +46,12 @@ Der Raspberry Pi aktualisiert sich alle 5 Minuten automatisch per Cron-Job (`scr
 - **Workflow:** Änderungen lokal fixen -> Tests (falls möglich) -> `git push origin main`.
 - **WICHTIG:** Niemals direkt auf dem Pi arbeiten, außer für Debugging per SSH. Der Pi überschreibt lokale Änderungen beim nächsten Pull.
 
+**⚠️ TECHNISCHE GOTCHAS:**
+- **Local Environment:** Die lokalen `venv` Verzeichnisse sind oft unvollständig oder inkonsistent (Python 3.14 vs 3.13 Pfade). Verlasse dich nicht darauf, dass `pip install` im Terminal sofort funktioniert. Nutze ggf. temporäre Venvs in `/tmp/` für schnelle Checks.
+- **Supabase SQL:** Raw SQL kann NICHT über die REST API ausgeführt werden (RPC `exec_sql` fehlt). Nutze immer den Supabase SQL Editor im Dashboard für Tabellen-Erstellungen oder Migrationen.
+- **Type Hints:** Achte beim `SupabaseClient` darauf, dass `data` Dicts korrekt getypt sind (`Dict[str, Any]`), um LSP Fehler zu vermeiden.
+- **News/LLM:** `IONOS` ist der bevorzugte LLM Provider. Prüfe in der `.env`, ob `IONOS_API_KEY` gesetzt ist.
+
 Create a structured handoff prompt:
 
 ```markdown
