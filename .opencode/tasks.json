@@ -2,11 +2,35 @@
   "$schema": "./tasks.schema.json",
   "meta": {
     "version": "1.1.0",
-    "last_updated": "2026-01-27T21:00:00Z",
-    "last_agent": "antigravity",
+    "last_updated": "2026-01-28T15:15:00Z",
+    "last_agent": "opencode",
     "project_phase": "production"
   },
   "tasks": [
+    {
+      "id": "TASK-005",
+      "title": "Fix Momentum Strategy & RSS Monitor",
+      "status": "completed",
+      "priority": "critical",
+      "category": "bugfix",
+      "created": "2026-01-28",
+      "updated": "2026-01-28",
+      "assigned_agent": "opencode",
+      "requires_review": true,
+      "reviewed_by": null,
+      "review_notes": null,
+      "description": "Resolved 'stop_loss_pct' errors in momentum strategy and fixed RSS monitor crash on empty descriptions. Verified by subsequent trades on AMD/META.",
+      "acceptance_criteria": [
+        "Momentum exit checks pass without KeyError",
+        "RSS monitor handles None descriptions",
+        "Adaptive optimizer includes all required fields in defaults",
+        "Successful trades logged in Supabase"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": true
+    },
     {
       "id": "TASK-001",
       "title": "Setup Repository Documentation Checkpoint",

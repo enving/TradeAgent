@@ -41,6 +41,11 @@ git log --oneline -5
 
 ### 3. Generate Handoff Prompt
 
+**🚀 DEPLOYMENT HINWEIS:**
+Der Raspberry Pi aktualisiert sich alle 5 Minuten automatisch per Cron-Job (`scripts/pi_auto_update.sh`). 
+- **Workflow:** Änderungen lokal fixen -> Tests (falls möglich) -> `git push origin main`.
+- **WICHTIG:** Niemals direkt auf dem Pi arbeiten, außer für Debugging per SSH. Der Pi überschreibt lokale Änderungen beim nächsten Pull.
+
 Create a structured handoff prompt:
 
 ```markdown
