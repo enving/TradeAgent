@@ -123,10 +123,12 @@ class RSSFeedMonitor:
                     if title is not None and link is not None:
                         article = {
                             "source": feed_name,
-                            "title": title.text,
-                            "link": link.text,
+                            "title": title.text or "",
+                            "link": link.text or "",
                             "published": pub_date.text if pub_date is not None else None,
-                            "description": description.text if description is not None else "",
+                            "description": description.text
+                            if description is not None and description.text is not None
+                            else "",
                         }
                         articles.append(article)
 
@@ -142,8 +144,8 @@ class RSSFeedMonitor:
         Returns:
             (is_relevant, ticker) tuple
         """
-        title = article["title"].upper()
-        description = article.get("description", "").upper()
+        title = (article.get("title") or "").upper()
+        description = (article.get("description") or "").upper()
         content = f"{title} {description}"
 
         # Check if any watchlist ticker mentioned

@@ -79,10 +79,14 @@ class StrategyParameters:
 
             if response.data and len(response.data) > 0:
                 params = response.data[0]["new_params"]
+                # Merge with defaults to ensure all keys exist
+                defaults = self.DEFAULTS.get(strategy, {})
+                merged_params = {**defaults, **params}
+
                 logger.info(f"Loaded optimized parameters for {strategy} from database")
-                self._cache[strategy] = params
+                self._cache[strategy] = merged_params
                 self._last_fetch[strategy] = datetime.now(timezone.utc)
-                return params
+                return merged_params
 
         except Exception as e:
             logger.warning(f"Failed to fetch parameters for {strategy}: {e}")

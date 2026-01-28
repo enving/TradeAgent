@@ -294,6 +294,9 @@ class AdaptiveOptimizer:
             "rsi_upper": 75,
             "macd_threshold": 0.0,
             "volume_ratio": 1.1,
+            "stop_loss_pct": 0.05,
+            "take_profit_pct": 0.15,
+            "volatility_threshold": 0.04,
         }
 
     async def _log_parameter_change(
