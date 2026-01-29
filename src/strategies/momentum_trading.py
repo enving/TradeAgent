@@ -13,6 +13,7 @@ from ..core.indicators import calculate_macd, calculate_rsi, calculate_sma, calc
 from ..mcp_clients.alpaca_client import AlpacaMCPClient
 from ..models.portfolio import Position
 from ..models.trade import Signal
+from ..utils.config import config
 from ..utils.logger import logger
 import yfinance as yf
 
@@ -289,10 +290,17 @@ async def check_exit_conditions(
                     latest = bars.iloc[-1]
 
                     # Exit if RSI > 75 (overbought) or MACD turns negative
-                    if latest["rsi"] > 75 or latest["histogram"] < 0:
+                    # In aggressive mode, we are more patient with RSI and MACD
+                    rsi_exit_threshold = 85 if config.AGGRESSIVE_MODE else 75
+                    macd_exit_enabled = not config.AGGRESSIVE_MODE  # Skip MACD exit if aggressive
+
+                    if latest["rsi"] > rsi_exit_threshold or (
+                        macd_exit_enabled and latest["histogram"] < 0
+                    ):
                         logger.info(
                             f"Technical exit for {position.symbol}: "
-                            f"RSI={latest['rsi']:.1f}, MACD={latest['histogram']:.3f}"
+                            f"RSI={latest['rsi']:.1f}, MACD={latest['histogram']:.3f} "
+                            f"(Aggressive={config.AGGRESSIVE_MODE})"
                         )
                         return (True, "technical_exit")
         except Exception as e:

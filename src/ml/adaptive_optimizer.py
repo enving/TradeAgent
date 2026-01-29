@@ -11,6 +11,7 @@ from typing import Dict, List, Tuple, Any
 import itertools
 
 from ..database.supabase_client import SupabaseClient
+from ..utils.config import config
 from ..utils.logger import logger
 
 
@@ -34,19 +35,27 @@ class AdaptiveOptimizer:
         - Volume ratio threshold
 
         Returns:
-            Optimal parameters based on Sharpe ratio
+            Optimal parameters based on Sharpe ratio or Total Return
         """
         logger.info(
-            f"Starting momentum parameter optimization (lookback: {self.lookback_days} days)"
+            f"Starting momentum parameter optimization (lookback: {self.lookback_days} days, Aggressive={config.AGGRESSIVE_MODE})"
         )
 
         # Define parameter grid to test
-        param_grid = {
-            "rsi_lower": [40, 45, 50],
-            "rsi_upper": [70, 75, 80],
-            "macd_threshold": [-0.1, 0.0, 0.1],
-            "volume_ratio": [1.0, 1.1, 1.2],
-        }
+        if config.AGGRESSIVE_MODE:
+            param_grid = {
+                "rsi_lower": [40, 45, 50, 55],
+                "rsi_upper": [75, 80, 85],
+                "macd_threshold": [-0.2, -0.1, 0.0, 0.1],
+                "volume_ratio": [1.0, 1.1, 1.2, 1.5],
+            }
+        else:
+            param_grid = {
+                "rsi_lower": [40, 45, 50],
+                "rsi_upper": [70, 75, 80],
+                "macd_threshold": [-0.1, 0.0, 0.1],
+                "volume_ratio": [1.0, 1.1, 1.2],
+            }
 
         # Generate all combinations
         param_combinations = list(
@@ -113,9 +122,16 @@ class AdaptiveOptimizer:
                 }
             )
 
-            # Track best
-            if sharpe_ratio > best_sharpe:
-                best_sharpe = sharpe_ratio
+            # Track best based on objective
+            objective_score = Decimal(str(sharpe_ratio))
+            if config.AGGRESSIVE_MODE:
+                # In aggressive mode, we combine Sharpe with total return to favor growth
+                objective_score = (Decimal(str(sharpe_ratio)) * Decimal("0.4")) + (
+                    Decimal(str(avg_return)) * Decimal(str(len(filtered_trades))) * Decimal("0.6")
+                )
+
+            if float(objective_score) > best_sharpe:
+                best_sharpe = float(objective_score)
                 best_params = {
                     "rsi_lower": rsi_low,
                     "rsi_upper": rsi_high,
@@ -128,7 +144,7 @@ class AdaptiveOptimizer:
             return self._get_default_momentum_params()
 
         # Log results
-        logger.info(f"Optimization complete! Best Sharpe ratio: {best_sharpe:.3f}")
+        logger.info(f"Optimization complete! Best score: {best_sharpe:.3f}")
         logger.info(f"Optimal parameters: {best_params}")
 
         # Log top 3 combinations

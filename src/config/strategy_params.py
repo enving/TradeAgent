@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 from ..database.supabase_client import SupabaseClient
+from ..utils.config import config
 from ..utils.logger import logger
 
 
@@ -22,7 +23,7 @@ class StrategyParameters:
             "macd_threshold": 0.0,
             "volume_ratio": 1.1,
             "stop_loss_pct": 0.05,
-            "take_profit_pct": 0.08,
+            "take_profit_pct": 0.12 if config.AGGRESSIVE_MODE else 0.08,
             "volatility_threshold": 0.04,
         },
         "news_sentiment": {
@@ -30,7 +31,7 @@ class StrategyParameters:
             "confidence_threshold": 0.8,
             "impact_required": "HIGH",
             "stop_loss_pct": 0.05,  # 5%
-            "take_profit_pct": 0.15,  # 15%
+            "take_profit_pct": 0.20 if config.AGGRESSIVE_MODE else 0.15,
         },
         "defensive": {
             "vti_allocation": 0.25,

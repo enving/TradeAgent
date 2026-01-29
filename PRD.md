@@ -43,6 +43,7 @@ TradeAgent is a production-ready hybrid AI trading system that combines determin
 | FEAT-005   | Adaptive Opt | Medium   | Completed| Weekly parameter optimization based on Sharpe ratio. |
 | FEAT-006   | Remote Logs  | Medium   | Completed| System logging to Supabase for remote monitoring. |
 | FEAT-007   | Circuit Break| High     | Completed| Daily loss limits and macro event detection. |
+| FEAT-008   | Aggressive Mode| Medium   | Completed| High-growth mode (0.8 Kelly, 25% max pos) targeting 1% daily. |
 
 ## Technical Requirements
 

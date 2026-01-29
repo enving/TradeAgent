@@ -9,16 +9,22 @@ from typing import Optional
 
 from ..models.portfolio import Portfolio
 from ..models.trade import Signal
+from ..utils.config import config
 from ..utils.logger import logger
 
 
 class PositionSizer:
     """Dynamic position sizing using Kelly Criterion."""
 
-    # Position size constraints
-    MAX_POSITION_SIZE_PCT = Decimal("0.15")  # 15% max per position
+    # Position size constraints (default values, can be overridden by config)
+    MAX_POSITION_SIZE_PCT = Decimal(str(config.MAX_POSITION_SIZE_PCT))
     MIN_POSITION_SIZE_PCT = Decimal("0.03")  # 3% min per position
-    KELLY_FRACTION = Decimal("0.5")  # Use half-Kelly for safety
+    KELLY_FRACTION = Decimal(str(config.KELLY_FRACTION))
+
+    # Aggressive Mode adjustments
+    if config.AGGRESSIVE_MODE:
+        KELLY_FRACTION = Decimal("0.8")  # Higher Kelly fraction for more growth
+        MAX_POSITION_SIZE_PCT = Decimal("0.25")  # Higher max per position
 
     # Historical performance (updated periodically)
     DEFAULT_WIN_RATE = Decimal("0.55")  # 55% win rate
@@ -76,8 +82,15 @@ class PositionSizer:
         Returns:
             Kelly fraction (0-1) representing optimal position size
         """
-        # Use confidence as win probability (scaled by historical win rate)
-        p = confidence * self.win_rate
+        # Adjust confidence for win probability
+        # In aggressive mode, we trust our signals more
+        effective_win_rate = self.win_rate
+        if config.AGGRESSIVE_MODE:
+            # Shift win rate slightly higher if signal confidence is high
+            effective_win_rate = max(self.win_rate, Decimal("0.60"))
+            p = (confidence * Decimal("0.7") + Decimal("0.3")) * effective_win_rate
+        else:
+            p = confidence * self.win_rate
 
         # Loss probability
         q = Decimal("1") - p
@@ -108,9 +121,7 @@ class PositionSizer:
 
         return kelly_adjusted
 
-    def calculate_position_size(
-        self, signal: Signal, portfolio: Portfolio
-    ) -> tuple[Decimal, str]:
+    def calculate_position_size(self, signal: Signal, portfolio: Portfolio) -> tuple[Decimal, str]:
         """Calculate optimal position size for a signal.
 
         Args:
@@ -133,9 +144,7 @@ class PositionSizer:
         take_profit_pct = abs(take_profit - entry_price) / entry_price
 
         # Calculate Kelly fraction
-        kelly_fraction = self.calculate_kelly_fraction(
-            confidence, stop_loss_pct, take_profit_pct
-        )
+        kelly_fraction = self.calculate_kelly_fraction(confidence, stop_loss_pct, take_profit_pct)
 
         # Calculate position size as percentage of portfolio
         position_size_pct = kelly_fraction
@@ -158,7 +167,7 @@ class PositionSizer:
         reasoning = (
             f"Kelly sizing: {original_pct:.1%} "
             f"(confidence={confidence:.2f}, win_rate={self.win_rate:.1%}, "
-            f"R:R={take_profit_pct/stop_loss_pct:.2f}x) "
+            f"R:R={take_profit_pct / stop_loss_pct:.2f}x) "
             f"→ capped at {position_size_pct:.1%} of portfolio"
         )
 
@@ -175,9 +184,7 @@ class PositionSizer:
 
         return position_value, reasoning
 
-    def calculate_quantity(
-        self, signal: Signal, portfolio: Portfolio
-    ) -> tuple[Decimal, str]:
+    def calculate_quantity(self, signal: Signal, portfolio: Portfolio) -> tuple[Decimal, str]:
         """Calculate number of shares to buy based on Kelly sizing.
 
         Args:
@@ -224,9 +231,7 @@ class PositionSizer:
             )
 
             if not response.data or len(response.data) < 10:
-                logger.warning(
-                    "Insufficient historical data for position sizing, using defaults"
-                )
+                logger.warning("Insufficient historical data for position sizing, using defaults")
                 return cls()
 
             # Calculate win rate and average returns

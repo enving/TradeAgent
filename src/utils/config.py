@@ -45,6 +45,9 @@ class Config:
     ENABLE_NEWS_VERIFICATION: bool
     ENABLE_NEWS_SIGNALS: bool
     DEFENSIVE_ALLOCATION_PCT: float
+    AGGRESSIVE_MODE: bool
+    MAX_POSITION_SIZE_PCT: float
+    KELLY_FRACTION: float
 
     # Environment Settings
     ENVIRONMENT: str
@@ -126,9 +129,14 @@ class Config:
 
         # Trading Strategy Configuration (NEW)
         # Controls for simplified trading approach
-        self.ENABLE_NEWS_VERIFICATION = os.getenv("ENABLE_NEWS_VERIFICATION", "false").lower() == "true"
+        self.ENABLE_NEWS_VERIFICATION = (
+            os.getenv("ENABLE_NEWS_VERIFICATION", "false").lower() == "true"
+        )
         self.ENABLE_NEWS_SIGNALS = os.getenv("ENABLE_NEWS_SIGNALS", "true").lower() == "true"
         self.DEFENSIVE_ALLOCATION_PCT = float(os.getenv("DEFENSIVE_ALLOCATION_PCT", "0.30"))
+        self.AGGRESSIVE_MODE = os.getenv("AGGRESSIVE_MODE", "false").lower() == "true"
+        self.MAX_POSITION_SIZE_PCT = float(os.getenv("MAX_POSITION_SIZE_PCT", "0.15"))
+        self.KELLY_FRACTION = float(os.getenv("KELLY_FRACTION", "0.5"))
 
         # Environment settings with defaults
         self.ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
