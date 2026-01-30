@@ -221,7 +221,7 @@ class PositionSizer:
         """
         try:
             # Query closed trades (those with exit_price)
-            response = (
+            response = await (
                 supabase_client.table("trades")
                 .select("pnl_pct")
                 .not_.is_("pnl_pct", "null")

@@ -149,6 +149,7 @@ class RSSFeedMonitor:
         content = f"{title} {description}"
 
         # Check if any watchlist ticker mentioned
+
         for ticker in self.watchlist:
             if ticker.upper() in content:
                 # Check for high-impact keywords
