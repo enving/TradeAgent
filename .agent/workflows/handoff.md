@@ -51,6 +51,8 @@ Der Raspberry Pi aktualisiert sich alle 5 Minuten automatisch per Cron-Job (`scr
 - **Supabase SQL:** Raw SQL kann NICHT über die REST API ausgeführt werden (RPC `exec_sql` fehlt). Nutze immer den Supabase SQL Editor im Dashboard für Tabellen-Erstellungen oder Migrationen.
 - **Type Hints:** Achte beim `SupabaseClient` darauf, dass `data` Dicts korrekt getypt sind (`Dict[str, Any]`), um LSP Fehler zu vermeiden.
 - **News/LLM:** `IONOS` ist der bevorzugte LLM Provider. Prüfe in der `.env`, ob `IONOS_API_KEY` gesetzt ist.
+- **Pi Crash Risk (NoneType Error):** In `rss_monitor.py` immer sicherstellen, dass `description` nicht `None` ist, bevor `.upper()` aufgerufen wird. Ein Absturz hier kann das ganze System offline nehmen (Dateisystem-Korruption möglich!).
+- **Mounting Pi Drive:** Falls der Pi nicht bootet: Das Laufwerk kann am Host gemountet werden. User `recovery` (UID 1001) besitzt die Files.
 
 Create a structured handoff prompt:
 

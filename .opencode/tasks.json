@@ -1,12 +1,58 @@
 {
   "$schema": "./tasks.schema.json",
   "meta": {
-    "version": "1.1.0",
-    "last_updated": "2026-01-28T16:30:00Z",
+    "version": "1.2.0",
+    "last_updated": "2026-01-30T17:00:00Z",
     "last_agent": "antigravity",
     "project_phase": "production"
   },
   "tasks": [
+    {
+      "id": "FEAT-008",
+      "title": "Aggressive Mode (1% Daily Target)",
+      "status": "completed",
+      "priority": "medium",
+      "category": "feature",
+      "created": "2026-01-29",
+      "updated": "2026-01-30",
+      "assigned_agent": "antigravity",
+      "requires_review": true,
+      "reviewed_by": null,
+      "review_notes": "Implemented higher Kelly fraction (0.8), max position size (25%), and total return optimization. Activated on Pi via .env.",
+      "description": "High-growth mode aiming for 1% daily returns by increasing leverage and optimizing for total return instead of Sharpe ratio.",
+      "acceptance_criteria": [
+        "AGGRESSIVE_MODE config flag works",
+        "PositionSizer uses 0.8 Kelly in aggressive mode",
+        "AdaptiveOptimizer weights total return higher"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": true
+    },
+    {
+      "id": "TASK-006",
+      "title": "Disaster Recovery: Pi Crash Fix",
+      "status": "completed",
+      "priority": "critical",
+      "category": "ops",
+      "created": "2026-01-30",
+      "updated": "2026-01-30",
+      "assigned_agent": "antigravity",
+      "requires_review": false,
+      "reviewed_by": "user",
+      "review_notes": "Pi recovered from SD card IO errors. Service restarted successfully.",
+      "description": "Diagnosed and fixed Pi crash caused by RSS monitor bug and filesystem corruption. Performed remote repair via SSH.",
+      "acceptance_criteria": [
+        "RSS monitor handles None descriptions without crashing",
+        "Pi is back online and accessible via SSH",
+        "Service is running and logging to Supabase"
+      ],
+      "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": true
+    },
     {
       "id": "TASK-005",
       "title": "Fix Momentum Strategy & RSS Monitor",
