@@ -1,8 +1,20 @@
 # 🤖 TradeAgent - AI-Powered Algorithmic Trading System
 
+[![TradeAgent CI](https://github.com/enving/TradeAgent/actions/workflows/ci.yml/badge.svg)](https://github.com/enving/TradeAgent/actions/workflows/ci.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+## 🤖 For AI Agents
+
+**Bootstrap Instructions:**
+If you are an AI agent (Claude, GPT, etc.) working on this repository, start here:
+
+1.  **Read Context:** `cat AGENTS.md`
+2.  **Verify Environment:** `python3 scripts/agent_health_check.py`
+3.  **Run Tests:** `pytest` (Unit) or `python3 scripts/testing/test_integration.py` (Integration)
+
+---
 
 **TradeAgent** is a production-ready hybrid AI trading system that combines deterministic technical analysis with LLM-powered sentiment analysis. Built for Alpaca's paper trading API, it features adaptive parameter optimization, portfolio correlation monitoring, and comprehensive risk management.
 

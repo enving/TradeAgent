@@ -501,52 +501,16 @@ ssh recovery@raspberrypi.local "cd ~/tradeagent && git reset --hard HEAD~1"
 
 **Check if everything is running:**
 
-```python
-# Quick Python check (for AI agents)
-import paramiko
-from supabase import create_client
-import os
-from dotenv import load_dotenv
+Instead of copying code manually, run the included health check script:
 
-load_dotenv()
-
-# 1. Check Pi
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(
-    "raspberrypi.local",
-    username=os.getenv("user_name"),
-    password=os.getenv("user_pw"),
-    look_for_keys=False,
-    allow_agent=False
-)
-
-# Service running?
-stdin, stdout, stderr = ssh.exec_command("pgrep -f 'python.*event_driven'")
-pid = stdout.read().decode('utf-8').strip()
-print(f"Pi Service: {'✅ Running' if pid else '❌ Stopped'}")
-
-# Market status?
-stdin, stdout, stderr = ssh.exec_command("tail -5 ~/tradeagent/logs/trading.log | grep -i 'market is'")
-market = stdout.read().decode('utf-8')
-print(f"Market: {market.strip()}")
-
-ssh.close()
-
-# 2. Check Supabase
-client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
-trades = client.table('trades').select('*', count='exact').limit(0).execute()
-print(f"Supabase: ✅ {trades.count} trades logged")
-```
-
-**For humans:**
 ```bash
-# Check Pi service (replace USER with username from .env)
-ssh USER@raspberrypi.local "pgrep -f python && echo 'Running' || echo 'Stopped'"
-
-# Check logs
-ssh USER@raspberrypi.local "tail -20 ~/tradeagent/logs/trading.log"
+python3 scripts/agent_health_check.py
 ```
+
+This script will verify:
+1. Local `.env` configuration
+2. Supabase connection
+3. Raspberry Pi connectivity (if configured)
 
 ---
 
