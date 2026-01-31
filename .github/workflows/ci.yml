@@ -1,0 +1,60 @@
+name: TradeAgent CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # Install dev dependencies if they are not in requirements.txt (but they seem to be there)
+        pip install pytest pytest-asyncio ruff
+
+    - name: Lint with Ruff
+      run: |
+        # Run ruff for linting
+        ruff check .
+      continue-on-error: true # Don't fail the build just for linting yet, let the user decide strictness later
+
+    - name: Run Unit Tests (Safe)
+      run: |
+        # Run all tests except integration tests that require secrets
+        pytest tests/ --ignore=tests/test_integration.py -v
+
+    - name: Run Integration Tests (With Secrets)
+      if: ${{ env.ALPACA_API_KEY != '' }}
+      env:
+        ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+        ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        IONOS_API_KEY: ${{ secrets.IONOS_API_KEY }}
+        IONOS_API_URL: ${{ secrets.IONOS_API_URL }}
+        IONOS_MODEL: ${{ secrets.IONOS_MODEL }}
+        # Add other secrets/variables as needed for integration tests
+        ENVIRONMENT: ${{ vars.ENVIRONMENT }}
+        LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+      run: |
+        echo "Secrets detected. Running integration tests..."
+        # Run the script-based integration test
+        python scripts/testing/test_integration.py
+        
+        # Also run the pytest integration test if it's different
+        pytest tests/test_integration.py -v

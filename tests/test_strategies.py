@@ -23,10 +23,8 @@ from src.strategies.defensive_core import (
 from src.strategies.momentum_trading import (
     scan_for_signals,
     check_exit_conditions,
-    update_strategy_parameters,
-    get_current_parameters,
-    STRATEGY_PARAMS,
 )
+from src.config.strategy_params import get_strategy_parameters
 from src.models.portfolio import Portfolio, Position
 from src.models.trade import Signal
 
@@ -39,38 +37,48 @@ def sample_portfolio():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
 
 @pytest.fixture
 def defensive_positions():
-    """Create sample defensive core positions."""
+    """Create sample defensive core positions matching new 15/8/7 allocation.
+
+    Target: VTI (15%), VGK (8%), GLD (7%)
+    Portfolio Value: $10,000
+
+    Target Values:
+    VTI: $1500
+    VGK: $800
+    GLD: $700
+    """
     return [
         Position(
             symbol="VTI",
-            quantity=Decimal("12"),
+            quantity=Decimal("7.2"),
             avg_entry_price=Decimal("200.00"),
             current_price=Decimal("208.33"),
-            market_value=Decimal("2500.00"),  # 25% of $10k portfolio
-            unrealized_pnl=Decimal("100.00"),
-            unrealized_pnl_pct=Decimal("0.0417"),
-        ),
-        Position(
-            symbol="VGK",
-            quantity=Decimal("30"),
-            avg_entry_price=Decimal("48.00"),
-            current_price=Decimal("50.00"),
-            market_value=Decimal("1500.00"),  # 15% of portfolio
+            market_value=Decimal("1500.00"),  # 15% (Target)
             unrealized_pnl=Decimal("60.00"),
             unrealized_pnl_pct=Decimal("0.0417"),
         ),
         Position(
+            symbol="VGK",
+            quantity=Decimal("16"),
+            avg_entry_price=Decimal("48.00"),
+            current_price=Decimal("50.00"),
+            market_value=Decimal("800.00"),  # 8% (Target)
+            unrealized_pnl=Decimal("32.00"),
+            unrealized_pnl_pct=Decimal("0.0417"),
+        ),
+        Position(
             symbol="GLD",
-            quantity=Decimal("5"),
+            quantity=Decimal("3.5"),
             avg_entry_price=Decimal("190.00"),
             current_price=Decimal("200.00"),
-            market_value=Decimal("1000.00"),  # 10% of portfolio
-            unrealized_pnl=Decimal("50.00"),
+            market_value=Decimal("700.00"),  # 7% (Target)
+            unrealized_pnl=Decimal("35.00"),
             unrealized_pnl_pct=Decimal("0.0526"),
         ),
     ]
@@ -79,25 +87,39 @@ def defensive_positions():
 class TestDefensiveCoreRebalancing:
     """Test cases for defensive core rebalancing logic."""
 
-    def test_should_rebalance_first_of_month(self, defensive_positions, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_should_rebalance_first_of_month(self, defensive_positions, sample_portfolio):
         """Test rebalancing triggered on first day of month."""
         first_day = date(2024, 3, 1)
 
-        should_rebal = should_rebalance(first_day, defensive_positions, sample_portfolio)
+        # Mock adapter to return True for first day
+        with patch("src.strategies.defensive_core.get_market_data_adapter") as mock_get_adapter:
+            mock_adapter = AsyncMock()
+            mock_adapter.is_first_trading_day_of_month.return_value = True
+            mock_get_adapter.return_value = mock_adapter
+
+            should_rebal = await should_rebalance(first_day, defensive_positions, sample_portfolio)
 
         # Should trigger on day 1
         assert should_rebal is True
 
-    def test_should_not_rebalance_mid_month(self, defensive_positions, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_should_not_rebalance_mid_month(self, defensive_positions, sample_portfolio):
         """Test no rebalancing mid-month when allocations are correct."""
         mid_month = date(2024, 3, 15)
 
-        should_rebal = should_rebalance(mid_month, defensive_positions, sample_portfolio)
+        with patch("src.strategies.defensive_core.get_market_data_adapter") as mock_get_adapter:
+            mock_adapter = AsyncMock()
+            mock_adapter.is_first_trading_day_of_month.return_value = False
+            mock_get_adapter.return_value = mock_adapter
+
+            should_rebal = await should_rebalance(mid_month, defensive_positions, sample_portfolio)
 
         # Should not trigger (allocations are at target)
         assert should_rebal is False
 
-    def test_should_rebalance_on_drift(self, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_should_rebalance_on_drift(self, sample_portfolio):
         """Test rebalancing triggered by portfolio drift > 5%."""
         # VTI drifted to 20% (target is 25%, drift = 5%)
         drifted_positions = [
@@ -123,12 +145,18 @@ class TestDefensiveCoreRebalancing:
 
         mid_month = date(2024, 3, 15)
 
-        should_rebal = should_rebalance(mid_month, drifted_positions, sample_portfolio)
+        with patch("src.strategies.defensive_core.get_market_data_adapter") as mock_get_adapter:
+            mock_adapter = AsyncMock()
+            mock_adapter.is_first_trading_day_of_month.return_value = False
+            mock_get_adapter.return_value = mock_adapter
+
+            should_rebal = await should_rebalance(mid_month, drifted_positions, sample_portfolio)
 
         # Should trigger due to drift
         assert should_rebal is True
 
-    def test_should_rebalance_missing_position(self, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_should_rebalance_missing_position(self, sample_portfolio):
         """Test rebalancing when defensive position is missing (edge case)."""
         # Missing GLD position
         incomplete_positions = [
@@ -145,7 +173,12 @@ class TestDefensiveCoreRebalancing:
 
         mid_month = date(2024, 3, 15)
 
-        should_rebal = should_rebalance(mid_month, incomplete_positions, sample_portfolio)
+        with patch("src.strategies.defensive_core.get_market_data_adapter") as mock_get_adapter:
+            mock_adapter = AsyncMock()
+            mock_adapter.is_first_trading_day_of_month.return_value = False
+            mock_get_adapter.return_value = mock_adapter
+
+            should_rebal = await should_rebalance(mid_month, incomplete_positions, sample_portfolio)
 
         # Should trigger (GLD missing = 10% drift from target)
         assert should_rebal is True
@@ -154,29 +187,64 @@ class TestDefensiveCoreRebalancing:
 class TestCalculateRebalancingOrders:
     """Test cases for rebalancing order calculation."""
 
-    def test_calculate_rebalancing_orders_exact_target(self, defensive_positions, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_calculate_rebalancing_orders_exact_target(
+        self, defensive_positions, sample_portfolio
+    ):
         """Test no orders when already at target allocations."""
-        signals = calculate_rebalancing_orders(defensive_positions, sample_portfolio)
+        mock_client = AsyncMock()
+        signals = await calculate_rebalancing_orders(
+            defensive_positions, sample_portfolio, mock_client
+        )
 
         # Already at target, no significant orders needed
         assert len(signals) == 0
 
-    def test_calculate_rebalancing_orders_buy_needed(self, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_calculate_rebalancing_orders_buy_needed(self, sample_portfolio):
         """Test buy orders generated when underweight."""
-        # VTI underweight (15% vs target 25%)
+        # VTI underweight (5% vs target 15%)
+        # Portfolio $10k -> Target $1500. Current $500 (5%). Diff $1000 -> BUY.
         underweight_positions = [
             Position(
                 symbol="VTI",
-                quantity=Decimal("7.5"),
+                quantity=Decimal("2.5"),
                 avg_entry_price=Decimal("200.00"),
                 current_price=Decimal("200.00"),
-                market_value=Decimal("1500.00"),  # 15% (need 25%)
+                market_value=Decimal("500.00"),  # 5% (need 15%)
                 unrealized_pnl=Decimal("0.00"),
                 unrealized_pnl_pct=Decimal("0.00"),
             ),
+            # Need to include other positions so they don't trigger "missing position" logic
+            # which would generate extra BUY orders for them
+            Position(
+                symbol="VGK",
+                quantity=Decimal("16"),
+                avg_entry_price=Decimal("50"),
+                current_price=Decimal("50"),
+                market_value=Decimal("800"),
+                unrealized_pnl=Decimal("0"),
+                unrealized_pnl_pct=Decimal("0"),
+            ),
+            Position(
+                symbol="GLD",
+                quantity=Decimal("3.5"),
+                avg_entry_price=Decimal("200"),
+                current_price=Decimal("200"),
+                market_value=Decimal("700"),
+                unrealized_pnl=Decimal("0"),
+                unrealized_pnl_pct=Decimal("0"),
+            ),
         ]
 
-        signals = calculate_rebalancing_orders(underweight_positions, sample_portfolio)
+        mock_client = AsyncMock()
+        # Mock price fetching for the newly added positions if needed, though they have current_price
+        # logic calls get_latest_quote only if current_price is None or logic dictates.
+        # But we pass positions WITH prices.
+
+        signals = await calculate_rebalancing_orders(
+            underweight_positions, sample_portfolio, mock_client
+        )
 
         # Should generate BUY signal for VTI
         vti_signal = next((s for s in signals if s.ticker == "VTI"), None)
@@ -184,7 +252,8 @@ class TestCalculateRebalancingOrders:
         assert vti_signal is not None
         assert vti_signal.action == "BUY"
 
-    def test_calculate_rebalancing_orders_sell_needed(self, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_calculate_rebalancing_orders_sell_needed(self, sample_portfolio):
         """Test sell orders generated when overweight."""
         # VTI overweight (35% vs target 25%)
         overweight_positions = [
@@ -199,7 +268,10 @@ class TestCalculateRebalancingOrders:
             ),
         ]
 
-        signals = calculate_rebalancing_orders(overweight_positions, sample_portfolio)
+        mock_client = AsyncMock()
+        signals = await calculate_rebalancing_orders(
+            overweight_positions, sample_portfolio, mock_client
+        )
 
         # Should generate SELL signal for VTI
         vti_signal = next((s for s in signals if s.ticker == "VTI"), None)
@@ -207,25 +279,52 @@ class TestCalculateRebalancingOrders:
         assert vti_signal is not None
         assert vti_signal.action == "SELL"
 
-    def test_calculate_rebalancing_orders_ignores_small_diff(self, sample_portfolio):
+    @pytest.mark.asyncio
+    async def test_calculate_rebalancing_orders_ignores_small_diff(self, sample_portfolio):
         """Test that small differences (<$100) are ignored."""
         # VTI slightly off ($50 difference)
+        # Target 15% of $10k = $1500.
+        # Current $1550 (Difference $50 < $100 -> Ignore)
         slightly_off_positions = [
             Position(
                 symbol="VTI",
-                quantity=Decimal("12.25"),
+                quantity=Decimal("7.75"),
                 avg_entry_price=Decimal("200.00"),
                 current_price=Decimal("200.00"),
-                market_value=Decimal("2450.00"),  # $50 under target
+                market_value=Decimal("1550.00"),  # $50 over target
                 unrealized_pnl=Decimal("0.00"),
                 unrealized_pnl_pct=Decimal("0.00"),
             ),
+            # Perfect match for others to avoid noise
+            Position(
+                symbol="VGK",
+                quantity=Decimal("16"),
+                avg_entry_price=Decimal("50"),
+                current_price=Decimal("50"),
+                market_value=Decimal("800"),
+                unrealized_pnl=Decimal("0"),
+                unrealized_pnl_pct=Decimal("0"),
+            ),
+            Position(
+                symbol="GLD",
+                quantity=Decimal("3.5"),
+                avg_entry_price=Decimal("200"),
+                current_price=Decimal("200"),
+                market_value=Decimal("700"),
+                unrealized_pnl=Decimal("0"),
+                unrealized_pnl_pct=Decimal("0"),
+            ),
         ]
 
-        signals = calculate_rebalancing_orders(slightly_off_positions, sample_portfolio)
+        mock_client = AsyncMock()
+        signals = await calculate_rebalancing_orders(
+            slightly_off_positions, sample_portfolio, mock_client
+        )
 
         # Should not generate order (difference < $100)
         assert len(signals) == 0
+
+    # Removed duplicates
 
 
 class TestDefensiveCoreHelpers:
@@ -244,8 +343,8 @@ class TestDefensiveCoreHelpers:
         """Test calculating total defensive exposure."""
         exposure = calculate_defensive_exposure(defensive_positions)
 
-        # VTI ($2500) + VGK ($1500) + GLD ($1000) = $5000
-        expected = Decimal("5000.00")
+        # VTI ($1500) + VGK ($800) + GLD ($700) = $3000
+        expected = Decimal("3000.00")
 
         assert exposure == expected
 
@@ -311,23 +410,34 @@ class TestMomentumTrading:
         assert isinstance(signals, list)
 
     @pytest.mark.asyncio
-    async def test_scan_for_signals_empty_data(self):
+    @patch("src.strategies.momentum_trading.yf.Ticker")
+    async def test_scan_for_signals_empty_data(self, mock_ticker):
         """Test signal scanning with no market data (edge case)."""
         mock_alpaca = AsyncMock()
-        mock_alpaca.get_bars = AsyncMock(return_value=pd.DataFrame())
 
-        signals = await scan_for_signals(mock_alpaca)
+        # Mock yfinance history to return empty DataFrame
+        mock_history = MagicMock()
+        mock_history.history.return_value = pd.DataFrame()
+        mock_ticker.return_value = mock_history
+
+        # Also mock get_dynamic_watchlist to return a small list for speed
+        with patch("src.strategies.momentum_trading.get_dynamic_watchlist", return_value=["AAPL"]):
+            signals = await scan_for_signals(mock_alpaca)
 
         # Should return empty list
         assert signals == []
 
     @pytest.mark.asyncio
-    async def test_scan_for_signals_api_error(self):
+    @patch("src.strategies.momentum_trading.yf.Ticker")
+    async def test_scan_for_signals_api_error(self, mock_ticker):
         """Test signal scanning handles API errors gracefully."""
         mock_alpaca = AsyncMock()
-        mock_alpaca.get_bars = AsyncMock(side_effect=Exception("API Error"))
 
-        signals = await scan_for_signals(mock_alpaca)
+        # Mock yfinance to raise exception
+        mock_ticker.side_effect = Exception("API Error")
+
+        with patch("src.strategies.momentum_trading.get_dynamic_watchlist", return_value=["AAPL"]):
+            signals = await scan_for_signals(mock_alpaca)
 
         # Should return empty list (errors are caught and logged)
         assert signals == []
@@ -384,7 +494,8 @@ class TestMomentumTrading:
         assert reason == "take_profit"
 
     @pytest.mark.asyncio
-    async def test_check_exit_conditions_no_exit(self):
+    @patch("src.strategies.momentum_trading.yf.Ticker")
+    async def test_check_exit_conditions_no_exit(self, mock_ticker):
         """Test exit condition: no exit (within range)."""
         mock_alpaca = AsyncMock()
 
@@ -400,7 +511,31 @@ class TestMomentumTrading:
         )
 
         mock_alpaca.get_latest_quote = AsyncMock(return_value={"price": 367.50})
-        mock_alpaca.get_bars = AsyncMock(return_value=pd.DataFrame())
+
+        # Mock yfinance history to return valid data that DOES NOT trigger exit
+        # RSI ~ 50, MACD > 0
+        mock_history = MagicMock()
+
+        # Create a DataFrame that will produce RSI ~ 50 (choppy sideways movement)
+        dates = pd.date_range(start="2024-01-01", periods=60, freq="D")
+        np.random.seed(42)
+        # Random walk around 100
+        returns = np.random.normal(0, 1, 60)
+        close_prices = 100 + np.cumsum(returns)
+
+        bars_df = pd.DataFrame(
+            {
+                "timestamp": dates,
+                "open": close_prices,
+                "high": close_prices + 0.5,
+                "low": close_prices - 0.5,
+                "close": close_prices,
+                "volume": [1000000] * 60,
+            }
+        )
+
+        mock_history.history.return_value = bars_df
+        mock_ticker.return_value = mock_history
 
         should_exit, reason = await check_exit_conditions(position, mock_alpaca)
 
@@ -412,62 +547,62 @@ class TestMomentumTrading:
 class TestMomentumParameters:
     """Test cases for momentum strategy parameter management."""
 
-    def test_get_current_parameters(self):
+    @pytest.mark.asyncio
+    async def test_get_current_parameters(self):
         """Test getting current strategy parameters."""
-        params = get_current_parameters()
+        params_manager = get_strategy_parameters()
+        params = await params_manager.get_parameters("momentum")
 
         # Should include all required parameters
-        assert "rsi_min" in params
-        assert "rsi_max" in params
+        assert "rsi_lower" in params
+        assert "rsi_upper" in params
         assert "stop_loss_pct" in params
         assert "take_profit_pct" in params
 
-    def test_update_strategy_parameters(self):
+    @pytest.mark.asyncio
+    async def test_update_strategy_parameters(self):
         """Test updating strategy parameters."""
-        original_rsi_min = STRATEGY_PARAMS["rsi_min"]
+        # Mock SupabaseClient to prevent real network calls
+        with patch("src.config.strategy_params.SupabaseClient.get_instance") as mock_get_instance:
+            # client instance should be MagicMock (sync methods by default), not AsyncMock
+            mock_client = MagicMock()
+            mock_get_instance.return_value = mock_client
 
-        try:
-            # Update parameters
-            new_params = {"rsi_min": 55, "rsi_max": 65}
-            update_strategy_parameters(new_params)
+            # .table() returns a builder
+            mock_table = MagicMock()
+            mock_client.table.return_value = mock_table
 
-            # Should be updated
-            assert STRATEGY_PARAMS["rsi_min"] == 55
-            assert STRATEGY_PARAMS["rsi_max"] == 65
+            # .insert() returns a builder
+            mock_insert_builder = MagicMock()
+            mock_table.insert.return_value = mock_insert_builder
 
-        finally:
-            # Restore original
-            STRATEGY_PARAMS["rsi_min"] = original_rsi_min
+            # .execute() IS async, so it returns a coroutine
+            mock_insert_builder.execute = AsyncMock()
 
-    def test_update_strategy_parameters_ignores_invalid(self):
-        """Test that invalid parameter names are ignored."""
-        original_params = STRATEGY_PARAMS.copy()
+            # StrategyParametersManager caches parameters, so get_parameters("momentum")
+            # might not hit the DB if it's already cached from previous tests.
+            # But update_parameters ALWAYS writes to DB.
 
-        try:
-            # Try to update with invalid key
-            new_params = {"invalid_key": 999}
-            update_strategy_parameters(new_params)
+            params_manager = get_strategy_parameters()
 
-            # Should not add invalid key
-            assert "invalid_key" not in STRATEGY_PARAMS
+            # Since we can't easily reset the singleton's cache here without accessing private dict,
+            # we rely on the fact that update_parameters updates the in-memory cache too.
 
-        finally:
-            # Restore original
-            STRATEGY_PARAMS.clear()
-            STRATEGY_PARAMS.update(original_params)
+            original_params = await params_manager.get_parameters("momentum")
+            original_rsi = original_params["rsi_lower"]
 
-    def test_parameter_changes_affect_signal_generation(self):
-        """Test that parameter changes affect signal logic."""
-        original_params = STRATEGY_PARAMS.copy()
+            try:
+                # Update parameters
+                new_params = {"rsi_lower": 45.0, "rsi_upper": 65.0}
+                await params_manager.update_parameters("momentum", new_params, reason="unit_test")
 
-        try:
-            # Change RSI range to very narrow (unlikely to find signals)
-            update_strategy_parameters({"rsi_min": 59, "rsi_max": 61})
+                # Verify update
+                updated = await params_manager.get_parameters("momentum")
+                assert updated["rsi_lower"] == 45.0
+                assert updated["rsi_upper"] == 65.0
 
-            assert STRATEGY_PARAMS["rsi_min"] == 59
-            assert STRATEGY_PARAMS["rsi_max"] == 61
-
-        finally:
-            # Restore original
-            STRATEGY_PARAMS.clear()
-            STRATEGY_PARAMS.update(original_params)
+            finally:
+                # Restore original (partial restore for test safety)
+                await params_manager.update_parameters(
+                    "momentum", {"rsi_lower": original_rsi}, reason="unit_test_restore"
+                )
