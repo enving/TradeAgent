@@ -51,6 +51,8 @@ jobs:
         # Add other secrets/variables as needed for integration tests
         ENVIRONMENT: ${{ vars.ENVIRONMENT }}
         LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+        # Add current directory to PYTHONPATH so scripts can import src
+        PYTHONPATH: .
       run: |
         echo "Secrets detected. Running integration tests..."
         # Run the script-based integration test
