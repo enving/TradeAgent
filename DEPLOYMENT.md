@@ -1,167 +1,90 @@
 # TradeAgent Deployment Guide
 
-## Raspberry Pi Auto-Update Setup
+## Local Deployment (Docker & PostgreSQL)
 
-The Raspberry Pi automatically pulls updates from GitHub every 5 minutes and restarts the trading service when code changes are detected.
+The system is designed to run locally using Docker for the database and Python for the application.
 
-### Initial Setup (Run Once)
+### Prerequisites
 
-1. **Clone repository on Raspberry Pi:**
-   ```bash
-   ssh recovery@raspberrypi.local
-   cd ~
-   git clone https://github.com/YOUR_USERNAME/tradeagent.git
-   cd tradeagent
-   ```
+- Docker Desktop (or Engine)
+- Python 3.9+
+- pip (Python package installer)
 
-2. **Setup Python environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+### 1. Database Setup
 
-3. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   nano .env  # Edit with your API keys
-   ```
+Start the PostgreSQL database using Docker Compose:
 
-4. **Enable auto-update:**
-   ```bash
-   chmod +x scripts/setup_pi_auto_update.sh
-   ./scripts/setup_pi_auto_update.sh
-   ```
-
-That's it! The Pi will now:
-- Check for GitHub updates every 5 minutes
-- Automatically pull new code
-- Restart the trading service if files changed
-- Update dependencies if `requirements.txt` changed
-
-### Monitoring
-
-**View auto-update logs:**
 ```bash
-ssh recovery@raspberrypi.local
-tail -f ~/tradeagent/logs/auto_update.log
+docker-compose up -d postgres
 ```
 
-**View trading logs:**
+This starts a PostgreSQL instance on port 5432 with the following credentials (defined in `docker-compose.yml`):
+- **User**: `postgres`
+- **Password**: `postgres`
+- **Database**: `trade_agent`
+
+### 2. Environment Configuration
+
+Copy the example environment file:
+
 ```bash
-tail -f ~/tradeagent/logs/trading.log
+cp .env.example .env
 ```
 
-**Check if service is running:**
-```bash
-pgrep -f "python.*event_driven_service" && echo "Running" || echo "Stopped"
+Edit `.env` and ensure the database URL matches your Docker setup:
+
+```ini
+POSTGRES_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/trade_agent
 ```
 
-### Manual Control
+Add your Alpaca API keys:
 
-**Manually trigger update:**
-```bash
-cd ~/tradeagent
-./scripts/pi_auto_update.sh
+```ini
+ALPACA_API_KEY=your_api_key
+ALPACA_SECRET_KEY=your_secret_key
+ALPACA_PAPER=true
 ```
 
-**Stop service:**
+### 3. Application Setup
+
+Create a virtual environment and install dependencies:
+
 ```bash
-pkill -f "python.*event_driven_service"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-**Start service manually:**
+Initialize the database schema:
+
 ```bash
-cd ~/tradeagent
-source venv/bin/activate
-nohup python -m src.event_driven_service > logs/service.log 2>&1 &
+python3 scripts/setup_db.py
 ```
 
-**Disable auto-update:**
+### 4. Running the Application
+
+Check system health:
+
 ```bash
-crontab -l | grep -v 'pi_auto_update.sh' | crontab -
+python3 scripts/agent_health_check.py
 ```
 
-### Development Workflow
+Run the main trading loop:
 
-1. **Make changes on your development machine**
-2. **Test locally:**
-   ```bash
-   source venv/bin/activate
-   python -m src.event_driven_service
-   ```
-3. **Commit and push to GitHub:**
-   ```bash
-   git add .
-   git commit -m "Your changes"
-   git push
-   ```
-4. **Wait up to 5 minutes** - The Pi will automatically pull and restart
-
-### Troubleshooting
-
-**Auto-update not working?**
 ```bash
-# Check cron is running
-crontab -l
-
-# Check cron logs
-tail -f ~/tradeagent/logs/cron.log
-
-# Manually test update script
-cd ~/tradeagent
-./scripts/pi_auto_update.sh
+python3 -m src.main
 ```
 
-**Service crashes?**
-```bash
-# View service logs
-tail -100 ~/tradeagent/logs/service.log
+## Monitoring
 
-# View Python errors
-tail -100 ~/tradeagent/logs/trading.log
-```
+- **Database Logs**: `docker-compose logs -f postgres`
+- **Application Logs**: Check the `logs/` directory.
 
-**Git pull conflicts?**
-```bash
-# Reset local changes (CAUTION: This removes local modifications)
-cd ~/tradeagent
-cp .env .env.backup
-git reset --hard origin/main
-mv .env.backup .env
-```
+## Troubleshooting
 
-## Supabase Database Setup
+**Database Connection Failed?**
+- Ensure Docker container is running: `docker ps`
+- Check port 5432 availability.
 
-### Missing Tables
-
-If you see errors about missing tables (`orchestrator_decisions`, `news_articles`, `llm_analysis_log`), run:
-
-1. Go to https://supabase.com/dashboard
-2. Open your project
-3. Click "SQL Editor"
-4. Run `database/complete_schema.sql` OR
-5. For just the orchestrator table: `database/create_orchestrator_table.sql`
-
-### Connection Test
-
-Test Supabase connection:
-```bash
-source venv/bin/activate
-python -c "
-from supabase import create_client
-import os
-from dotenv import load_dotenv
-load_dotenv()
-client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_KEY'))
-result = client.table('trades').select('*').limit(1).execute()
-print('✅ Supabase connected successfully!')
-"
-```
-
-## Security Notes
-
-- **Never commit `.env` files** - They contain API keys
-- **.env is excluded** from git sync and auto-update
-- **Backup your .env** before major updates
-- **Use service keys** for production, anon keys for development
+**Missing Tables?**
+- Run `python3 scripts/setup_db.py` to recreate the schema.

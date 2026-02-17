@@ -42,6 +42,7 @@ def sample_portfolio():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
 
@@ -57,6 +58,7 @@ def small_portfolio():
         cash=Decimal("500.00"),
         buying_power=Decimal("500.00"),
         equity=Decimal("500.00"),
+        last_equity=Decimal("500.00"),
     )
 
 
@@ -72,6 +74,7 @@ def large_portfolio():
         cash=Decimal("50000.00"),
         buying_power=Decimal("50000.00"),
         equity=Decimal("50000.00"),
+        last_equity=Decimal("50000.00"),
     )
 
 
@@ -103,28 +106,28 @@ def defensive_positions():
     return [
         Position(
             symbol="VTI",
-            quantity=Decimal("12.5"),
+            quantity=Decimal("7.5"),
             avg_entry_price=Decimal("200.00"),
             current_price=Decimal("200.00"),
-            market_value=Decimal("2500.00"),  # 25% of $10k
-            unrealized_pnl=Decimal("0.00"),
-            unrealized_pnl_pct=Decimal("0.00"),
-        ),
-        Position(
-            symbol="VGK",
-            quantity=Decimal("30"),
-            avg_entry_price=Decimal("50.00"),
-            current_price=Decimal("50.00"),
             market_value=Decimal("1500.00"),  # 15% of $10k
             unrealized_pnl=Decimal("0.00"),
             unrealized_pnl_pct=Decimal("0.00"),
         ),
         Position(
+            symbol="VGK",
+            quantity=Decimal("16"),
+            avg_entry_price=Decimal("50.00"),
+            current_price=Decimal("50.00"),
+            market_value=Decimal("800.00"),  # 8% of $10k
+            unrealized_pnl=Decimal("0.00"),
+            unrealized_pnl_pct=Decimal("0.00"),
+        ),
+        Position(
             symbol="GLD",
-            quantity=Decimal("5"),
+            quantity=Decimal("3.5"),
             avg_entry_price=Decimal("200.00"),
             current_price=Decimal("200.00"),
-            market_value=Decimal("1000.00"),  # 10% of $10k
+            market_value=Decimal("700.00"),  # 7% of $10k
             unrealized_pnl=Decimal("0.00"),
             unrealized_pnl_pct=Decimal("0.00"),
         ),
@@ -365,6 +368,7 @@ async def mock_alpaca_client():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
     mock_client.get_positions.return_value = []

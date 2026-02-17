@@ -90,6 +90,7 @@ temp/
 *_secret.txt
 credentials.json
 secrets.json
+*.exp
 
 # User-specific config
 config.local.py
