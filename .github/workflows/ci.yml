@@ -10,6 +10,21 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: tradeagent_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v3
 
@@ -22,19 +37,25 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        # Install dev dependencies if they are not in requirements.txt (but they seem to be there)
-        pip install pytest pytest-asyncio ruff
+        pip install .[dev]
+
+    - name: Initialize Database
+      run: |
+        # Initialize the test database schema
+        # We need to set the POSTGRES_URL for the script to use the service container
+        export POSTGRES_URL=postgresql+asyncpg://postgres:password@localhost:5432/tradeagent_test
+        python scripts/setup_db.py
 
     - name: Lint with Ruff
       run: |
         # Run ruff for linting
         ruff check .
-      continue-on-error: true # Don't fail the build just for linting yet, let the user decide strictness later
+      continue-on-error: true
 
     - name: Run Unit Tests (Safe)
+      env:
+        POSTGRES_URL: postgresql+asyncpg://postgres:password@localhost:5432/tradeagent_test
       run: |
-        # Run all tests except integration tests that require secrets
         pytest tests/ --ignore=tests/test_integration.py -v
 
     - name: Run Integration Tests (With Secrets)
@@ -43,15 +64,12 @@ jobs:
         ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
         ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         IONOS_API_KEY: ${{ secrets.IONOS_API_KEY }}
         IONOS_API_URL: ${{ secrets.IONOS_API_URL }}
         IONOS_MODEL: ${{ secrets.IONOS_MODEL }}
-        # Add other secrets/variables as needed for integration tests
+        POSTGRES_URL: postgresql+asyncpg://postgres:password@localhost:5432/tradeagent_test
         ENVIRONMENT: ${{ vars.ENVIRONMENT }}
         LOG_LEVEL: ${{ vars.LOG_LEVEL }}
-        # Add current directory to PYTHONPATH so scripts can import src
         PYTHONPATH: .
       run: |
         echo "Secrets detected. Running integration tests..."

@@ -3,13 +3,15 @@
 Tracks sentiment evolution over time to detect momentum shifts
 and inflection points. Generates signals based on sentiment trends.
 """
+from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional, Literal, cast, Any
 from dataclasses import dataclass
 
-from ..database.supabase_client import SupabaseClient
+from sqlalchemy import text
+from ..database.postgres_client import PostgresClient
 from ..models.trade import Signal
 from ..utils.logger import logger
 
@@ -51,45 +53,49 @@ class SentimentTracker:
     INFLECTION_THRESHOLD = Decimal("0.5")
 
     def __init__(self):
-        self.supabase = None
-
-    async def _ensure_supabase(self) -> Any:
-        if self.supabase is None:
-            self.supabase = await SupabaseClient.get_instance()
-        return self.supabase
+        pass  # PostgresClient is singleton, no need to store instance
 
     async def get_sentiment_history(
         self, ticker: str, days: Optional[int] = None, reference_date: Optional[datetime] = None
     ) -> List[SentimentDataPoint]:
-        client = await self._ensure_supabase()
+        client = await PostgresClient.get_instance()
 
         lookback = days or self.LOOKBACK_DAYS
         end_date = reference_date or datetime.now(timezone.utc)
         cutoff_date = end_date - timedelta(days=lookback)
 
         try:
-            response = await (
-                client.table("llm_analysis_log")
-                .select("*")
-                .eq("ticker", ticker)
-                .gte("created_at", cutoff_date.isoformat())
-                .order("created_at", desc=False)
-                .execute()
-            )
+            stmt = text("""
+                SELECT * FROM llm_analysis_log
+                WHERE ticker = :ticker
+                  AND created_at >= :cutoff
+                ORDER BY created_at ASC
+            """)
+            
+            rows = []
+            async with client._connection() as conn:
+                result = await conn.execute(stmt, {"ticker": ticker, "cutoff": cutoff_date})
+                rows = result.fetchall()
 
-            if not response.data:
+            if not rows:
                 return []
 
             datapoints = []
-            for row in response.data:
+            for row in rows:
+                data = dict(row._mapping)
+                # created_at is likely already datetime in asyncpg
+                timestamp = data["created_at"]
+                if isinstance(timestamp, str):
+                    timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                
                 datapoints.append(
                     SentimentDataPoint(
-                        ticker=row["ticker"],
-                        timestamp=datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")),
-                        sentiment_score=Decimal(str(row["sentiment_score"])),
-                        action=row["action"],
-                        confidence=Decimal(str(row["confidence"])),
-                        impact=row["impact"],
+                        ticker=data["ticker"],
+                        timestamp=timestamp,
+                        sentiment_score=Decimal(str(data["sentiment_score"])),
+                        action=data["action"],
+                        confidence=Decimal(str(data["confidence"])),
+                        impact=data["impact"],
                     )
                 )
 

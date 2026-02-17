@@ -1,5 +1,6 @@
 """Configuration management using environment variables."""
 
+from __future__ import annotations
 import os
 
 from dotenv import load_dotenv
@@ -15,10 +16,8 @@ class Config:
     ALPACA_API_KEY: str
     ALPACA_SECRET_KEY: str
 
-    # Supabase Configuration
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-    SUPABASE_PROJECT_REF: str | None
+    # Database Configuration
+    POSTGRES_URL: str
 
     # Optional Market Data APIs
     TWELVEDATA_API_KEY: str | None
@@ -58,11 +57,9 @@ class Config:
         # Required variables
         self.ALPACA_API_KEY = self._get_required("ALPACA_API_KEY")
         self.ALPACA_SECRET_KEY = self._get_required("ALPACA_SECRET_KEY")
-        self.SUPABASE_URL = self._get_required("SUPABASE_URL")
-        self.SUPABASE_KEY = self._get_required("SUPABASE_KEY")
+        self.POSTGRES_URL = self._get_required("POSTGRES_URL")
 
         # Optional variables
-        self.SUPABASE_PROJECT_REF = os.getenv("SUPABASE_PROJECT_REF")
         self.TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY")
         self.ALPHA_VANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY")
 
@@ -172,8 +169,9 @@ class Config:
         required_fields = [
             "ALPACA_API_KEY",
             "ALPACA_SECRET_KEY",
-            "SUPABASE_URL",
-            "SUPABASE_KEY",
+            "ALPACA_API_KEY",
+            "ALPACA_SECRET_KEY",
+            "POSTGRES_URL",
         ]
 
         for field in required_fields:
@@ -181,9 +179,9 @@ class Config:
             if not value:
                 raise ValueError(f"Configuration field '{field}' is missing or empty")
 
-        # Validate URL format for Supabase
-        if not self.SUPABASE_URL.startswith("https://"):
-            raise ValueError("SUPABASE_URL must start with 'https://'")
+        # Validate URL format for Postgres
+        if not self.POSTGRES_URL.startswith("postgresql"):
+            raise ValueError("POSTGRES_URL must start with 'postgresql'")
 
 
 # Global configuration instance

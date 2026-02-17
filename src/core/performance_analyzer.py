@@ -7,7 +7,8 @@ No machine learning - just clear if/then rules for strategy improvement.
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from ..database.supabase_client import SupabaseClient
+from sqlalchemy import text
+from ..database.postgres_client import PostgresClient
 from ..models.performance import DailyPerformance, ParameterChange, StrategyMetrics, WeeklyReport
 from ..strategies.momentum_trading import get_current_parameters, update_strategy_parameters
 from ..utils.logger import logger
@@ -21,13 +22,20 @@ async def analyze_daily_performance() -> None:
     """
     logger.info("=== Daily Performance Analysis Started ===")
 
-    supabase = await SupabaseClient.get_instance()
+    client = await PostgresClient.get_instance()
     today = datetime.now().date()
 
     # Fetch today's trades
     try:
-        response = await supabase.table("trades").select("*").eq("date", today).execute()
-        trades = response.data
+        stmt = text("""
+            SELECT * FROM trades WHERE date = :today
+        """)
+        
+        trades = []
+        async with client._connection() as conn:
+            result = await conn.execute(stmt, {"today": today})
+            trades = [dict(row._mapping) for row in result.fetchall()]
+            
     except Exception as e:
         logger.error(f"Failed to fetch trades: {e}")
         return
@@ -59,8 +67,16 @@ async def analyze_daily_performance() -> None:
 
     try:
         # Fetch last 30 days of performance for Sharpe/Drawdown
-        history_response = await supabase.table("daily_performance").select("*").order("date", desc=True).limit(30).execute()
-        history = history_response.data
+        stmt_hist = text("""
+            SELECT * FROM daily_performance 
+            ORDER BY date DESC 
+            LIMIT 30
+        """)
+        
+        history = []
+        async with client._connection() as conn:
+            result = await conn.execute(stmt_hist)
+            history = [dict(row._mapping) for row in result.fetchall()]
         
         if history:
             # Calculate Sharpe Ratio (assuming risk-free rate = 0 for simplicity)
@@ -121,7 +137,7 @@ async def analyze_daily_performance() -> None:
         max_drawdown=max_drawdown
     )
 
-    await SupabaseClient.log_daily_performance(daily_perf)
+    await PostgresClient.log_daily_performance(daily_perf)
 
     # Per-strategy breakdown
     for strategy in ["defensive", "momentum"]:
@@ -141,7 +157,7 @@ async def analyze_daily_performance() -> None:
                 total_pnl=strategy_pnl,
             )
 
-            await SupabaseClient.log_strategy_metrics(metrics)
+            await PostgresClient.log_strategy_metrics(metrics)
 
             logger.info(
                 f"{strategy.upper()} Strategy: {len(strategy_trades)} trades, "
@@ -162,11 +178,11 @@ async def adjust_parameters_if_needed() -> None:
     2. Risk/Reward > 0.5 → Widen stop-loss
     3. Win rate > 65% → Loosen entry criteria
     """
-    supabase = await SupabaseClient.get_instance()
+    client = await PostgresClient.get_instance()
 
     # Get last 5 days of momentum strategy performance
     try:
-        recent_perf = await supabase.get_strategy_performance("momentum", days=5)
+        recent_perf = await PostgresClient.get_strategy_performance("momentum", days=5)
     except Exception as e:
         logger.error(f"Failed to fetch strategy performance: {e}")
         return
@@ -193,12 +209,13 @@ async def adjust_parameters_if_needed() -> None:
         update_strategy_parameters(new_params)
 
         change = ParameterChange(
-            date=datetime.now().date(),
+            changed_at=datetime.now(), # ParameterChange uses changed_at not date
+            strategy="momentum", # Added strategy field required for ParameterChange
             reason=f"Low win rate: {avg_win_rate:.2%}",
             old_params=current_params,
             new_params=get_current_parameters(),
         )
-        await SupabaseClient.log_parameter_change(change)
+        await PostgresClient.log_parameter_change(change)
 
     # Rule 2: Risk/Reward worsening → Widen stop-loss
     # (Simplified - would need more data for full implementation)
@@ -215,12 +232,13 @@ async def adjust_parameters_if_needed() -> None:
         update_strategy_parameters(new_params)
 
         change = ParameterChange(
-            date=datetime.now().date(),
+            changed_at=datetime.now(),
+            strategy="momentum",
             reason=f"High win rate: {avg_win_rate:.2%}",
             old_params=current_params,
             new_params=get_current_parameters(),
         )
-        await SupabaseClient.log_parameter_change(change)
+        await PostgresClient.log_parameter_change(change)
 
 
 async def generate_weekly_report() -> None:
@@ -231,15 +249,21 @@ async def generate_weekly_report() -> None:
     """
     logger.info("===== WEEKLY REPORT =====")
 
-    supabase = await SupabaseClient.get_instance()
+    client = await PostgresClient.get_instance()
     week_ago = datetime.now().date() - timedelta(days=7)
 
     # Fetch week's trades
     try:
-        response = (
-            await supabase.table("trades").select("*").gte("date", week_ago.isoformat()).execute()
-        )
-        weekly_trades = response.data
+        stmt = text("""
+            SELECT * FROM trades WHERE date >= :week_ago
+        """)
+        
+        trades = []
+        async with client._connection() as conn:
+            result = await conn.execute(stmt, {"week_ago": week_ago})
+            trades = [dict(row._mapping) for row in result.fetchall()]
+        
+        weekly_trades = trades
     except Exception as e:
         logger.error(f"Failed to fetch weekly trades: {e}")
         return
@@ -281,6 +305,6 @@ async def generate_weekly_report() -> None:
         worst_performers=worst_performers,
     )
 
-    await SupabaseClient.log_weekly_report(report)
+    await PostgresClient.log_weekly_report(report)
 
     logger.info("Weekly report saved to database")

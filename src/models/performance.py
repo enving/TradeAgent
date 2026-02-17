@@ -1,4 +1,5 @@
 """Pydantic models for performance tracking and metrics."""
+from __future__ import annotations
 
 from datetime import date as DateType
 from decimal import Decimal

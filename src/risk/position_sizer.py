@@ -210,32 +210,51 @@ class PositionSizer:
         return quantity, reasoning
 
     @classmethod
-    async def from_historical_data(cls, supabase_client) -> "PositionSizer":
-        """Create PositionSizer from historical trade data in Supabase.
+    async def from_historical_data(cls, db_client) -> "PositionSizer":
+        """Create PositionSizer from historical trade data in PostgreSQL.
 
         Args:
-            supabase_client: Supabase client instance
+            db_client: PostgresClient instance
 
         Returns:
             PositionSizer configured with historical performance
         """
         try:
             # Query closed trades (those with exit_price)
-            response = await (
-                supabase_client.table("trades")
-                .select("pnl_pct")
-                .not_.is_("pnl_pct", "null")
-                .order("date", desc=True)
-                .limit(100)
-                .execute()
-            )
+            # Use raw SQL since db_client is PostgresClient but method expects Supabase-like
+            # We need to adapt this. PostgresClient has get_recent_trades but not arbitrary query.
+            # Best approach: Add a specific method to PostgresClient for this, OR allow SQL access.
+            # Given PostgresClient structure, let's use the underlying _connection if accessible, 
+            # or better: rely on a new method in PostgresClient or use what's available.
+            
+            # Actually, let's just use SQL here directly via the client's connection context 
+            # if we make _connection public or add a method.
+            # But to keep it clean, let's just add a method to PostgresClient? 
+            # Or use text() here if we can access the engine.
+            # The cleanest way without changing PostgresClient again right now 
+            # is to assume db_client IS PostgresClient and we can access _connection.
+            
+            from sqlalchemy import text
+            
+            stmt = text("""
+                SELECT pnl_pct FROM trades
+                WHERE pnl_pct IS NOT NULL
+                ORDER BY date DESC
+                LIMIT 100
+            """)
+            
+            async with db_client._connection() as conn:
+                result = await conn.execute(stmt)
+                rows = result.fetchall()
+                data = [dict(row._mapping) for row in rows]
 
-            if not response.data or len(response.data) < 10:
+            if not data or len(data) < 10:
                 logger.warning("Insufficient historical data for position sizing, using defaults")
-                return cls()
+                yielded_sizer = cls()
+                return yielded_sizer
 
             # Calculate win rate and average returns
-            pnl_values = [Decimal(str(trade["pnl_pct"])) for trade in response.data]
+            pnl_values = [Decimal(str(row["pnl_pct"])) for row in data]
             wins = [pnl for pnl in pnl_values if pnl > 0]
             losses = [abs(pnl) for pnl in pnl_values if pnl < 0]
 
@@ -245,13 +264,14 @@ class PositionSizer:
 
             logger.info(
                 f"Loaded historical performance: "
-                f"{len(response.data)} trades, "
+                f"{len(data)} trades, "
                 f"win_rate={win_rate:.2%}, "
                 f"avg_win={avg_win:.2%}, "
                 f"avg_loss={avg_loss:.2%}"
             )
-
-            return cls(win_rate=win_rate, avg_win=avg_win, avg_loss=avg_loss)
+            
+            yielded_sizer = cls(win_rate=win_rate, avg_win=avg_win, avg_loss=avg_loss)
+            return yielded_sizer
 
         except Exception as e:
             logger.error(f"Failed to load historical data: {e}, using defaults")
@@ -274,11 +294,11 @@ def get_position_sizer() -> PositionSizer:
     return _position_sizer
 
 
-async def initialize_position_sizer(supabase_client) -> None:
-    """Initialize position sizer with historical data from Supabase.
+async def initialize_position_sizer(db_client) -> None:
+    """Initialize position sizer with historical data from PostgreSQL.
 
     Args:
-        supabase_client: Supabase client instance
+        db_client: PostgresClient instance
     """
     global _position_sizer
-    _position_sizer = await PositionSizer.from_historical_data(supabase_client)
+    _position_sizer = await PositionSizer.from_historical_data(db_client)

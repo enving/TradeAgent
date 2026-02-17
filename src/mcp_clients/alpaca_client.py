@@ -3,6 +3,7 @@
 Uses alpaca-py SDK for all trading operations.
 Implements rate limiting and error handling for robust trading.
 """
+from __future__ import annotations
 
 from decimal import Decimal
 from typing import Any, Literal
@@ -432,7 +433,7 @@ class AlpacaMCPClient:
     async def get_recent_orders(self, limit: int = 100) -> list[dict[str, Any]]:
         """Get recent orders from Alpaca.
 
-        Retrieves filled orders to reconcile with Supabase logs.
+        Retrieves filled orders to reconcile with PostgreSQL logs.
 
         Args:
             limit: Maximum number of orders to retrieve (default: 100)

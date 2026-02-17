@@ -1,6 +1,10 @@
 """News-Driven Trading Strategy."""
 
-from datetime import datetime, UTC
+
+from __future__ import annotations
+
+from datetime import datetime
+
 from decimal import Decimal
 
 from src.llm.sentiment_analyzer import SentimentAnalyzer

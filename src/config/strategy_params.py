@@ -7,7 +7,7 @@ to database. Falls back to defaults if no optimized parameters exist.
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-from ..database.supabase_client import SupabaseClient
+
 from ..utils.config import config
 from ..utils.logger import logger
 
@@ -68,18 +68,33 @@ class StrategyParameters:
 
         # Fetch latest from database
         try:
-            client = await SupabaseClient.get_instance()
-            response = (
-                await client.table("parameter_changes")
-                .select("new_params")
-                .ilike("reason", f"%{strategy}%")
-                .order("changed_at", desc=True)
-                .limit(1)
-                .execute()
-            )
+            from sqlalchemy import text
+            from ..database.postgres_client import PostgresClient
+            
+            client = await PostgresClient.get_instance()
+            
+            # ILIKE is Postgres specific case-insensitive match
+            stmt = text("""
+                SELECT new_params FROM parameter_changes
+                WHERE reason ILIKE :reason
+                ORDER BY changed_at DESC
+                LIMIT 1
+            """)
+            
+            params_data = None
+            async with client._connection() as conn:
+                result = await conn.execute(stmt, {"reason": f"%{strategy}%"})
+                row = result.fetchone()
+                if row:
+                    params_data = row.new_params
 
-            if response.data and len(response.data) > 0:
-                params = response.data[0]["new_params"]
+            if params_data:
+                # Ensure parsing? asyncpg/SQLAlchemy usually handles JSONB to dict conversion
+                params = params_data
+                if isinstance(params, str):
+                    import json
+                    params = json.loads(params)
+                    
                 # Merge with defaults to ensure all keys exist
                 defaults = self.DEFAULTS.get(strategy, {})
                 merged_params = {**defaults, **params}
@@ -112,20 +127,18 @@ class StrategyParameters:
         old_params = await self.get_parameters(strategy)
 
         try:
-            client = await SupabaseClient.get_instance()
-            await (
-                client.table("parameter_changes")
-                .insert(
-                    {
-                        "changed_at": datetime.now(timezone.utc).isoformat(),
-                        "strategy": strategy,
-                        "reason": f"[{strategy}] {reason}",
-                        "old_params": old_params,
-                        "new_params": new_params,
-                    }
-                )
-                .execute()
+            from ..database.postgres_client import PostgresClient
+            from ..models.performance import ParameterChange
+            
+            change = ParameterChange(
+                changed_at=datetime.now(timezone.utc),
+                strategy=strategy,
+                reason=f"[{strategy}] {reason}",
+                old_params=old_params,
+                new_params=new_params
             )
+            
+            await PostgresClient.log_parameter_change(change)
 
             # Update cache
             self._cache[strategy] = new_params

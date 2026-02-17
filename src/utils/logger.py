@@ -1,4 +1,5 @@
-"""Structured logging configuration for the trading system."""
+"""Centralized logging configuration."""
+from __future__ import annotations
 
 import logging
 import sys
@@ -8,8 +9,8 @@ from typing import Any
 
 from .config import config
 
-class SupabaseLogHandler(logging.Handler):
-    """Logging handler that writes to Supabase asynchronously."""
+class PostgresLogHandler(logging.Handler):
+    """Logging handler that writes to PostgreSQL asynchronously."""
     
     def emit(self, record: logging.LogRecord):
         """Queue log record for writing."""
@@ -31,18 +32,18 @@ class SupabaseLogHandler(logging.Handler):
                 
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._flush_to_supabase(log_data))
+                loop.create_task(self._flush_to_db(log_data))
             except RuntimeError:
                 pass
         except Exception:
             self.handleError(record)
 
-    async def _flush_to_supabase(self, data: dict[str, Any]):
-        """Write to Supabase via lazy import."""
+    async def _flush_to_db(self, data: dict[str, Any]):
+        """Write to Database via lazy import."""
         try:
-            # Absolute import to be safe
-            from src.database.supabase_client import SupabaseClient
-            await SupabaseClient.log_system_event(
+            # Absolute import to be safe and avoid circular imports
+            from src.database.postgres_client import PostgresClient
+            await PostgresClient.log_system_event(
                 level=data["level"],
                 module=data["module"],
                 message=data["message"],
@@ -50,7 +51,7 @@ class SupabaseLogHandler(logging.Handler):
             )
         except Exception as e:
             # Critical: Use print to stderr to avoid infinite recursion
-            print(f"SupabaseLogHandler critical failure: {e}", file=sys.stderr)
+            print(f"PostgresLogHandler critical failure: {e}", file=sys.stderr)
 
 def setup_logger(
     name: str = "tradeagent",
@@ -85,8 +86,8 @@ def setup_logger(
         file_handler.setFormatter(detailed_formatter)
         logger.addHandler(file_handler)
     
-    if config.SUPABASE_URL and config.SUPABASE_KEY:
-        db_handler = SupabaseLogHandler()
+    if hasattr(config, "POSTGRES_URL") and config.POSTGRES_URL:
+        db_handler = PostgresLogHandler()
         db_handler.setLevel(logging.WARNING)
         db_handler.setFormatter(detailed_formatter)
         logger.addHandler(db_handler)

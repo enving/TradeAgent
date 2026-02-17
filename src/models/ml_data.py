@@ -3,6 +3,7 @@
 Stores features collected at trade time and labels added later.
 Used for training custom time-series models and FinBERT fine-tuning.
 """
+from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal

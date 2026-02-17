@@ -8,7 +8,7 @@ from decimal import Decimal
 from datetime import datetime
 
 from src.mcp_clients.alpaca_client import AlpacaMCPClient
-from src.database.supabase_client import SupabaseClient
+from src.database.postgres_client import PostgresClient
 from src.core.indicators import calculate_rsi, calculate_macd, calculate_sma
 from src.models.trade import Signal
 from src.utils.logger import logger
@@ -84,16 +84,16 @@ async def test_technical_indicators():
             return False
 
 
-async def test_supabase_logging():
-    """Test Supabase database logging."""
+async def test_postgres_logging():
+    """Test PostgreSQL database logging."""
     logger.info("")
     logger.info("=" * 60)
-    logger.info("TEST 3: Supabase Logging")
+    logger.info("TEST 3: PostgreSQL Logging")
     logger.info("=" * 60)
 
     try:
-        # Initialize Supabase client
-        await SupabaseClient.get_instance()
+        # Initialize Postgres client
+        await PostgresClient.get_instance()
 
         # Create test signal
         test_signal = Signal(
@@ -107,22 +107,24 @@ async def test_supabase_logging():
             rsi=Decimal("65.0"),
             macd_histogram=Decimal("0.5"),
             volume_ratio=Decimal("1.3"),
+            analysis_id=None,
+            signal_id=None
         )
 
         # Log signal using classmethod
-        result = await SupabaseClient.log_signal(test_signal)
-        logger.info(f"[OK] Signal logged to Supabase: {test_signal.ticker} {test_signal.action}")
+        result = await PostgresClient.log_signal(test_signal)
+        logger.info(f"[OK] Signal logged to PostgreSQL: {test_signal.ticker} {test_signal.action}")
 
         # Retrieve recent trades using classmethod
-        recent_trades = await SupabaseClient.get_recent_trades(days=7)
+        recent_trades = await PostgresClient.get_recent_trades(days=7)
         logger.info(f"[OK] Retrieved {len(recent_trades)} recent trades")
 
         return True
 
     except Exception as e:
-        logger.error(f"[FAIL] Supabase logging failed: {e}")
+        logger.error(f"[FAIL] PostgreSQL logging failed: {e}")
         logger.error("    -> Make sure database schema is created!")
-        logger.error("    -> Run: python setup_database.py")
+        logger.error("    -> Run: python scripts/setup_db.py")
         return False
 
 
@@ -139,8 +141,8 @@ async def run_integration_tests():
     # Test 2: Technical Indicators
     results["indicators"] = await test_technical_indicators()
 
-    # Test 3: Supabase Logging
-    results["supabase"] = await test_supabase_logging()
+    # Test 3: PostgreSQL Logging
+    results["postgres"] = await test_postgres_logging()
 
     # Summary
     logger.info("")

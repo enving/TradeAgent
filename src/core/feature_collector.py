@@ -8,8 +8,12 @@ Collects event-driven features at trade time:
 - Trade metadata
 """
 
+
+from __future__ import annotations
+
 import asyncio
-from datetime import UTC, datetime
+
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import aiohttp
@@ -87,7 +91,7 @@ class FeatureCollector:
         tech_features = TechnicalFeatures(**(technicals or {}))
 
         # Meta features
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         meta = MetaFeatures(
             strategy=strategy,
             trigger_reason=trigger_reason,

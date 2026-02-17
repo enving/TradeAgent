@@ -1,23 +1,24 @@
 """Order Reconciliation Utility.
 
-Syncs Alpaca orders with Supabase trades to ensure all SELLs are logged.
-Fixes issues where exits happen in Alpaca but aren't logged in Supabase.
+Syncs Alpaca orders with PostgreSQL trades to ensure all SELLs are logged.
+Fixes issues where exits happen in Alpaca but aren't logged in PostgreSQL.
 """
 
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
+from sqlalchemy import text
 
-from ..database.supabase_client import SupabaseClient
+from ..database.postgres_client import PostgresClient
 from ..mcp_clients.alpaca_client import AlpacaMCPClient
 from ..models.trade import Trade
 from ..utils.logger import logger
 
 
 async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
-    """Reconcile Alpaca orders with Supabase trades.
+    """Reconcile Alpaca orders with PostgreSQL trades.
 
     Fetches recent orders from Alpaca and ensures all filled SELLs
-    are logged in Supabase. This catches exits that happened in Alpaca
+    are logged in PostgreSQL. This catches exits that happened in Alpaca
     but weren't logged due to timing issues or errors.
 
     Args:
@@ -58,28 +59,41 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
 
         logger.info(f"Found {len(recent_orders)} orders in last {lookback_hours}h")
 
-        # 2. Get existing trades from Supabase
-        client = await SupabaseClient.get_instance()
-        response = (
-            await client.table("trades")
-            .select("id, alpaca_order_id, ticker, action, date, quantity, created_at")
-            .gte("created_at", cutoff_time.isoformat())
-            .execute()
-        )
+        # 2. Get existing trades from PostgreSQL
+        db = await PostgresClient.get_instance()
+        
+        stmt = text("""
+            SELECT id, alpaca_order_id, ticker, action, date, quantity, created_at
+            FROM trades
+            WHERE created_at >= :cutoff
+        """)
+        
+        existing_trades = []
+        async with db._connection() as conn:
+            result = await conn.execute(stmt, {"cutoff": cutoff_time})
+            existing_trades = [dict(row._mapping) for row in result.fetchall()]
 
         existing_order_ids = {
             str(trade["alpaca_order_id"])
-            for trade in (response.data or [])
+            for trade in existing_trades
             if trade.get("alpaca_order_id")
         }
 
         # Build lookup for trades with null alpaca_order_id
         # Key: (ticker, action, date_hour, quantity)
         null_order_trades = {}
-        for trade in (response.data or []):
+        for trade in existing_trades:
             if not trade.get("alpaca_order_id"):
                 # Use hour-level precision for matching (avoid microsecond mismatches)
-                trade_date = datetime.fromisoformat(trade["date"].replace("Z", "+00:00"))
+                # date column contains datetime
+                # Handle possible datetime string vs object (SQLAlchemy returns object usually)
+                trade_date = trade["date"]
+                if isinstance(trade_date, str):
+                    trade_date = datetime.fromisoformat(trade_date.replace("Z", "+00:00"))
+                elif isinstance(trade_date, datetime) and trade_date.tzinfo is None:
+                    # Assume UTC if naive, or check DB
+                    trade_date = trade_date.replace(tzinfo=timezone.utc)
+                
                 trade_hour = trade_date.replace(minute=0, second=0, microsecond=0)
                 key = (
                     trade["ticker"],
@@ -91,7 +105,7 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
 
         logger.info(
             f"Found {len(existing_order_ids)} trades with order IDs, "
-            f"{len(null_order_trades)} trades with null order IDs"
+            f"Found {len(null_order_trades)} trades with null order IDs"
         )
 
         # 3. Find missing orders and update null order IDs
@@ -129,9 +143,17 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
                     )
 
                     # Update the trade with the alpaca_order_id
-                    await client.table("trades").update({
-                        "alpaca_order_id": order["id"]
-                    }).eq("id", existing_trade["id"]).execute()
+                    update_stmt = text("""
+                        UPDATE trades
+                        SET alpaca_order_id = :order_id
+                        WHERE id = :trade_id
+                    """)
+                    
+                    async with db._connection() as conn:
+                        await conn.execute(update_stmt, {
+                            "order_id": order["id"],
+                            "trade_id": existing_trade["id"]
+                        })
 
                     stats["updated"] += 1
                     logger.info(f"✅ Updated trade with order ID: {order['id']}")
@@ -154,7 +176,7 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
                 f"(Order ID: {order['id']}, Filled: {order['filled_at']})"
             )
 
-            # 4. Log missing order to Supabase
+            # 4. Log missing order to PostgreSQL
             try:
                 # Determine if this is a BUY or SELL
                 action = "BUY" if order["side"] == "buy" else "SELL"
@@ -165,20 +187,27 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
                 pnl_pct = None
 
                 if action == "SELL":
-                    # Try to find matching BUY
-                    buy_response = (
-                        await client.table("trades")
-                        .select("entry_price, quantity")
-                        .eq("ticker", order["symbol"])
-                        .eq("action", "BUY")
-                        .is_("exit_price", "null")
-                        .order("date", desc=True)
-                        .limit(1)
-                        .execute()
-                    )
+                    # Try to find matching BUY - Find most recent BUY for this ticker with no exit_price? 
+                    # OR if we are reconciling passed trades, maybe just finding one that's open.
+                    
+                    buy_query = text("""
+                        SELECT entry_price, quantity
+                        FROM trades
+                        WHERE ticker = :ticker
+                          AND action = 'BUY'
+                          AND exit_price IS NULL
+                        ORDER BY date DESC
+                        LIMIT 1
+                    """)
+                    
+                    buy_trade = None
+                    async with db._connection() as conn:
+                        res = await conn.execute(buy_query, {"ticker": order["symbol"]})
+                        row = res.fetchone()
+                        if row:
+                            buy_trade = dict(row._mapping)
 
-                    if buy_response.data and len(buy_response.data) > 0:
-                        buy_trade = buy_response.data[0]
+                    if buy_trade:
                         entry_price = Decimal(str(buy_trade["entry_price"]))
                         exit_price = Decimal(str(order["filled_avg_price"]))
                         quantity = Decimal(str(order["filled_qty"]))
@@ -213,8 +242,8 @@ async def reconcile_orders(lookback_hours: int = 24) -> dict[str, int]:
                     alpaca_order_id=order["id"],
                 )
 
-                # Log to Supabase
-                await SupabaseClient.log_trade(trade)
+                # Log to PostgreSQL
+                await PostgresClient.log_trade(trade)
                 stats["logged"] += 1
 
                 logger.info(f"✅ Logged missing {action}: {order['symbol']}")

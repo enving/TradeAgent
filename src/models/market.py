@@ -3,6 +3,8 @@
 These models provide a stable interface independent of Alpaca API changes.
 """
 
+from __future__ import annotations
+
 from datetime import date, datetime, time
 from decimal import Decimal
 from math import sqrt

@@ -11,7 +11,11 @@ Design Philosophy:
 5. Type Safe - Clear interfaces with Pydantic models
 """
 
+
+from __future__ import annotations
+
 from datetime import date, datetime, time, timedelta
+
 from decimal import Decimal
 from typing import Any
 

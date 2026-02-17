@@ -9,8 +9,10 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Tuple, Any
 import itertools
+from sqlalchemy import text
 
-from ..database.supabase_client import SupabaseClient
+from ..database.postgres_client import PostgresClient
+from ..models.performance import ParameterChange
 from ..utils.config import config
 from ..utils.logger import logger
 
@@ -183,19 +185,29 @@ class AdaptiveOptimizer:
         Returns:
             List of trade records
         """
-        client = await SupabaseClient.get_instance()
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=lookback_days)
-
-        response = (
-            await client.table("trades")
-            .select("*")
-            .eq("strategy", strategy)
-            .gte("date", cutoff_date.isoformat())
-            .order("date", desc=True)
-            .execute()
-        )
-
-        return response.data if response.data else []
+        try:
+            client = await PostgresClient.get_instance()
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+            
+            # Using text query for filtering
+            stmt = text("""
+                SELECT * FROM trades 
+                WHERE strategy = :strategy 
+                  AND date >= :cutoff_date 
+                ORDER BY date DESC
+            """)
+            
+            async with client._connection() as conn:
+                result = await conn.execute(stmt, {
+                    "strategy": strategy,
+                    "cutoff_date": cutoff_date
+                })
+                rows = result.fetchall()
+                return [dict(row._mapping) for row in rows]
+                
+        except Exception as e:
+            logger.error(f"Failed to fetch recent trades: {e}")
+            return []
 
     def _filter_trades_by_params(
         self, trades: List[Dict[str, Any]], params: Dict[str, float]
@@ -334,22 +346,17 @@ class AdaptiveOptimizer:
             True if successful, False otherwise
         """
         try:
-            client = await SupabaseClient.get_instance()
-
-            await (
-                client.table("parameter_changes")
-                .insert(
-                    {
-                        "changed_at": datetime.now(timezone.utc).isoformat(),
-                        "strategy": strategy,
-                        "reason": f"[{strategy}] {reason}",
-                        "old_params": old_params,
-                        "new_params": new_params,
-                    }
-                )
-                .execute()
+            # Create ParameterChange model
+            change = ParameterChange(
+                changed_at=datetime.now(timezone.utc),
+                strategy=strategy,
+                reason=f"[{strategy}] {reason}",
+                old_params=old_params,
+                new_params=new_params
             )
-
+            
+            await PostgresClient.log_parameter_change(change)
+            
             logger.info(f"Parameter change logged for {strategy}")
             return True
 

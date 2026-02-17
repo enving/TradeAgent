@@ -5,7 +5,11 @@ Uses technical indicators to identify entry/exit points.
 Allocates 30% of portfolio to momentum trades (max 5 positions).
 """
 
+
+from __future__ import annotations
+
 import pandas as pd
+
 from decimal import Decimal
 
 from ..config.strategy_params import get_strategy_parameters

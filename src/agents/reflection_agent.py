@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any
 import json
 
-from ..database.supabase_client import SupabaseClient
+
 from ..utils.logger import logger
 
 
@@ -17,22 +17,28 @@ class ReflectionAgent:
 
     def __init__(self):
         """Initialize reflection agent."""
-        self.supabase = SupabaseClient.get_instance()
+        pass  # No instance needed for PostgresClient (it's singleton)
 
     async def run_daily_reflection(self) -> Dict[str, Any]:
         """Run daily reflection on recently closed trades."""
         logger.info("🧠 Reflection Agent: Starting daily analysis...")
 
         try:
-            client = await self.supabase
-            response = (
-                client.table("trades").select("*").order("date", desc=True).limit(20).execute()
-            )
-            trades_data = getattr(response, "data", [])
-
-            if not isinstance(trades_data, list):
-                logger.warning("Reflection Agent: Expected list of trades, got something else.")
-                return {"status": "error", "message": "Invalid data format"}
+            from sqlalchemy import text
+            from ..database.postgres_client import PostgresClient
+            
+            client = await PostgresClient.get_instance()
+            
+            stmt = text("""
+                SELECT * FROM trades 
+                ORDER BY date DESC 
+                LIMIT 20
+            """)
+            
+            trades_data = []
+            async with client._connection() as conn:
+                result = await conn.execute(stmt)
+                trades_data = [dict(row._mapping) for row in result.fetchall()]
 
             closed_trades = [
                 t

@@ -8,7 +8,8 @@ from typing import Any, Dict, List, Optional
 import yfinance as yf
 from openai import AsyncOpenAI
 
-from ...database.supabase_client import SupabaseClient
+from sqlalchemy import text
+from ...database.postgres_client import PostgresClient
 from ...models.portfolio import Portfolio, Position
 from ...models.trade import Signal
 from ...utils.config import config
@@ -130,18 +131,19 @@ class OrchestratorTools:
             Performance metrics
         """
         try:
-            client = await SupabaseClient.get_instance()
+            client = await PostgresClient.get_instance()
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
             # Fetch recent trades
-            response = (
-                await client.table("trades")
-                .select("*")
-                .gte("date", cutoff_date.isoformat())
-                .execute()
-            )
-
-            trades = response.data if response.data else []
+            stmt = text("""
+                SELECT * FROM trades
+                WHERE date >= :cutoff
+            """)
+            
+            trades = []
+            async with client._connection() as conn:
+                result = await conn.execute(stmt, {"cutoff": cutoff_date})
+                trades = [dict(row._mapping) for row in result.fetchall()]
 
             if not trades:
                 return {"total_trades": 0, "message": "No recent trades"}
@@ -246,38 +248,55 @@ Positions:
         if "error" in performance or "strategy_performance" not in performance:
             return {}
 
-        # Calculate win rates per strategy
-        client = await SupabaseClient.get_instance()
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        # return strategy metrics directly from performance dict calculated above
+        # The original code fetched trades AGAIN for each strategy, which is inefficient.
+        # We already calculated strategy_performance in get_recent_performance.
+        # However, we need 'win_rate' and 'avg_pnl' which might not be in the brief summary.
+        # Let's see: strategy_performance has 'count' and 'pnl'.
+        # We need win rate. So we DO need to iterate trades again or better calculate it in get_recent_performance.
+        
+        # Let's rely on the strategy_performance dict constructed in get_recent_performance? 
+        # No, it doesn't track wins per strategy.
+        # Let's fix this efficiently by querying DB or improving get_recent_performance logic here.
+        
+        try:
+            client = await PostgresClient.get_instance()
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
-        strategy_metrics = {}
+            stmt = text("""
+                SELECT strategy, 
+                       COUNT(*) as total_trades,
+                       SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins,
+                       SUM(pnl) as total_pnl
+                FROM trades
+                WHERE date >= :cutoff
+                GROUP BY strategy
+            """)
 
-        for strategy, data in performance["strategy_performance"].items():
-            # Fetch trades for this strategy
-            response = (
-                await client.table("trades")
-                .select("*")
-                .eq("strategy", strategy)
-                .gte("date", cutoff_date.isoformat())
-                .execute()
-            )
+            strategy_metrics = {}
+            async with client._connection() as conn:
+                result = await conn.execute(stmt, {"cutoff": cutoff_date})
+                rows = result.fetchall()
+                
+                for row in rows:
+                    r = dict(row._mapping)
+                    strategy = r["strategy"] or "unknown"
+                    total = r["total_trades"]
+                    wins = r["wins"] or 0
+                    pnl = float(r["total_pnl"] or 0)
+                    
+                    strategy_metrics[strategy] = {
+                        "total_trades": total,
+                        "total_pnl": pnl,
+                        "win_rate": wins / total if total > 0 else 0.0,
+                        "avg_pnl": pnl / total if total > 0 else 0.0,
+                    }
+                    
+            return strategy_metrics
 
-            trades = response.data if response.data else []
-
-            if not trades:
-                continue
-
-            wins = sum(1 for t in trades if t.get("pnl") and float(t["pnl"]) > 0)
-            total = len(trades)
-
-            strategy_metrics[strategy] = {
-                "total_trades": total,
-                "total_pnl": data["pnl"],
-                "win_rate": wins / total if total > 0 else 0,
-                "avg_pnl": data["pnl"] / total if total > 0 else 0,
-            }
-
-        return strategy_metrics
+        except Exception as e:
+            logger.error(f"Error fetching detailed strategy performance: {e}")
+            return {}
 
     async def log_orchestrator_decision(
         self,
@@ -295,7 +314,7 @@ Positions:
             reasoning: LLM reasoning
         """
         try:
-            await SupabaseClient.log_orchestrator_decision(
+            await PostgresClient.log_orchestrator_decision(
                 decision_type=decision_type,
                 input_data=input_data,
                 output_data=output_data,

@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 20
+spawn ssh -o StrictHostKeyChecking=no recovery@raspberrypi.local "rm ~/tradeagent/.env"
+expect {
+  "password:" {
+    send "raspberry\r"
+    exp_continue
+  }
+  eof
+}
+
+wait

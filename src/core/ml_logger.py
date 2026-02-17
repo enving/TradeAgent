@@ -4,11 +4,11 @@ This module automatically logs features when signals are generated,
 enabling self-learning model training.
 """
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from ..core.feature_collector import FeatureCollector
-from ..database.supabase_client import SupabaseClient
+from ..database.postgres_client import PostgresClient
 from ..models.ml_data import MLTrainingData, TechnicalFeatures, TradeFeatures
 from ..models.trade import Signal
 from ..utils.logger import logger
@@ -65,7 +65,7 @@ class MLLogger:
             ml_data = MLTrainingData(
                 ticker=signal.ticker,
                 action=signal.action,
-                timestamp=datetime.now(UTC),
+                timestamp=datetime.now(timezone.utc),
                 entry_price=signal.entry_price,
                 strategy=signal.strategy,
                 features=features,
@@ -73,7 +73,7 @@ class MLLogger:
             )
 
             # Store in database
-            await SupabaseClient.log_ml_training_data(ml_data)
+            await PostgresClient.log_ml_training_data(ml_data)
 
             logger.info(f"ML features logged for {signal.ticker} {signal.action}")
 

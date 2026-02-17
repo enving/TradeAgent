@@ -4,10 +4,31 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: tradeagent_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trade_agent
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   tradeagent:
     build: .
-    container_name: tradeagent-bot
+    container_name: tradeagent_bot
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
     # DNS servers (bypass Pi-hole)
     dns:
@@ -34,4 +55,7 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
+
+volumes:
+  postgres_data:
 

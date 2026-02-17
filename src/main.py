@@ -7,9 +7,13 @@ Usage:
     uv run python src/main.py
 """
 
+
+from __future__ import annotations
+
 import asyncio
+
 from typing import Any, cast, Literal
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from .adapters.market_data_adapter import get_market_data_adapter
@@ -24,7 +28,7 @@ from .core.risk_manager import (
     filter_signals_by_risk,
     check_daily_loss_limit,
 )
-from .database.supabase_client import SupabaseClient
+from .database.postgres_client import PostgresClient
 from .mcp_clients.alpaca_client import AlpacaMCPClient
 from .models.trade import Trade
 from .risk.position_sizer import initialize_position_sizer
@@ -54,10 +58,10 @@ async def daily_trading_loop(
             logger.info(f"REACTIVE MODE: Focusing on {focused_ticker}")
         logger.info(f"Environment: {config.ENVIRONMENT}")
 
-    logger.info(f"Time: {datetime.now(UTC).isoformat()}")
+    logger.info(f"Time: {datetime.now(timezone.utc).isoformat()}")
 
     execution_summary: dict[str, Any] = {
-        "start_time": datetime.now(UTC),
+        "start_time": datetime.now(timezone.utc),
         "rebalance_orders": 0,
         "momentum_signals": 0,
         "orders_executed": 0,
@@ -99,7 +103,7 @@ async def daily_trading_loop(
 
         # Initialize clients
         alpaca = AlpacaMCPClient()
-        supabase = await SupabaseClient.get_instance()
+        db_client = await PostgresClient.get_instance()
         ml_logger = get_ml_logger()
         news_strategy = NewsStrategy()
 
@@ -110,7 +114,7 @@ async def daily_trading_loop(
             orchestrator = TradingOrchestrator()
 
         # Initialize position sizer
-        await initialize_position_sizer(supabase)
+        await initialize_position_sizer(db_client)
 
         # 1. Get portfolio state
         logger.info("Fetching portfolio state...")
@@ -149,7 +153,7 @@ async def daily_trading_loop(
             execution_summary["regime_confidence"] = confidence
 
         # 2. Defensive Core: Check rebalancing
-        today = datetime.now(UTC).date()
+        today = datetime.now(timezone.utc).date()
         if await should_rebalance(today, positions, portfolio):
             rebalance_signals = await calculate_rebalancing_orders(positions, portfolio, alpaca)
             execution_summary["rebalance_orders"] = len(rebalance_signals)
@@ -164,7 +168,7 @@ async def daily_trading_loop(
 
                     action = cast(Literal["BUY", "SELL"], signal.action)
                     trade = Trade(
-                        date=datetime.now(UTC),
+                        date=datetime.now(timezone.utc),
                         ticker=signal.ticker,
                         action=action,
                         quantity=qty,
@@ -172,7 +176,7 @@ async def daily_trading_loop(
                         strategy="defensive",
                         alpaca_order_id=order_id,
                     )
-                    await SupabaseClient.log_trade(trade)
+                    await PostgresClient.log_trade(trade)
                     execution_summary["orders_executed"] += 1
                 except Exception as e:
                     logger.error(f"Failed to execute rebalance order for {signal.ticker}: {e}")
@@ -238,7 +242,7 @@ async def daily_trading_loop(
                 )
 
                 trade = Trade(
-                    date=datetime.now(UTC),
+                    date=datetime.now(timezone.utc),
                     ticker=signal.ticker,
                     action="BUY",
                     quantity=qty,
@@ -249,7 +253,7 @@ async def daily_trading_loop(
                     volume_ratio=signal.volume_ratio,
                     alpaca_order_id=order_id,
                 )
-                await SupabaseClient.log_trade(trade)
+                await PostgresClient.log_trade(trade)
                 execution_summary["orders_executed"] += 1
             except Exception as e:
                 logger.error(f"Failed to execute momentum order for {signal.ticker}: {e}")
@@ -269,7 +273,7 @@ async def daily_trading_loop(
                         reason,
                     )
                     exit_trade = Trade(
-                        date=datetime.now(UTC),
+                        date=datetime.now(timezone.utc),
                         ticker=position.symbol,
                         action="SELL",
                         quantity=position.quantity,
@@ -292,7 +296,7 @@ async def daily_trading_loop(
                         )
 
                     # Always log the trade (even if close failed)
-                    await SupabaseClient.log_trade(exit_trade)
+                    await PostgresClient.log_trade(exit_trade)
                     execution_summary["positions_closed"] += 1
 
             except Exception as e:
@@ -332,7 +336,7 @@ async def daily_trading_loop(
 
             await generate_weekly_report()
 
-        execution_summary["end_time"] = datetime.now(UTC)
+        execution_summary["end_time"] = datetime.now(timezone.utc)
         execution_summary["success"] = True
         return execution_summary
 
