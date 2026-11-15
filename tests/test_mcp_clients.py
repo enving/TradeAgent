@@ -148,6 +148,7 @@ class TestAlpacaMCPClient:
                 cash=Decimal("5000.00"),
                 buying_power=Decimal("5000.00"),
                 equity=Decimal("5000.00"),
+                last_equity=Decimal("5000.00"),
             )
 
             portfolio = await mock_alpaca_client.get_account()
@@ -373,6 +374,7 @@ class TestMCPClientIntegration:
                 cash=Decimal("5000.00"),
                 buying_power=Decimal("5000.00"),
                 equity=Decimal("5000.00"),
+                last_equity=Decimal("5000.00"),
             )
 
             mock_positions.return_value = []

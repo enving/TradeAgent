@@ -9,6 +9,8 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      PYTHON_DOTENV_DISABLED: "1"
     
     steps:
     - uses: actions/checkout@v3
@@ -24,7 +26,7 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         # Install dev dependencies if they are not in requirements.txt (but they seem to be there)
-        pip install pytest pytest-asyncio ruff
+        pip install pytest pytest-asyncio pytest-socket ruff
 
     - name: Lint with Ruff
       run: |
@@ -34,29 +36,10 @@ jobs:
 
     - name: Run Unit Tests (Safe)
       run: |
-        # Run all tests except integration tests that require secrets
-        pytest tests/ --ignore=tests/test_integration.py -v
-
-    - name: Run Integration Tests (With Secrets)
-      if: ${{ env.ALPACA_API_KEY != '' }}
-      env:
-        ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
-        ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        IONOS_API_KEY: ${{ secrets.IONOS_API_KEY }}
-        IONOS_API_URL: ${{ secrets.IONOS_API_URL }}
-        IONOS_MODEL: ${{ secrets.IONOS_MODEL }}
-        # Add other secrets/variables as needed for integration tests
-        ENVIRONMENT: ${{ vars.ENVIRONMENT }}
-        LOG_LEVEL: ${{ vars.LOG_LEVEL }}
-        # Add current directory to PYTHONPATH so scripts can import src
-        PYTHONPATH: .
-      run: |
-        echo "Secrets detected. Running integration tests..."
-        # Run the script-based integration test
-        python scripts/testing/test_integration.py
-        
-        # Also run the pytest integration test if it's different
-        pytest tests/test_integration.py -v
+        # Manual and E2E scripts can call external services or update parameters.
+        # Unix sockets are needed by asyncio; network sockets remain disabled.
+        python -m pytest tests/ \
+          --ignore=tests/test_integration.py \
+          --ignore=tests/test_adaptive_optimizer_e2e.py \
+          --ignore-glob='tests/test_*_manual.py' \
+          --disable-socket --allow-unix-socket -v
