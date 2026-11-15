@@ -2,8 +2,8 @@
   "$schema": "./tasks.schema.json",
   "meta": {
     "version": "1.2.0",
-    "last_updated": "2026-01-30T17:00:00Z",
-    "last_agent": "antigravity",
+    "last_updated": "2026-11-15T19:40:08Z",
+    "last_agent": "Codex",
     "project_phase": "production"
   },
   "tasks": [
@@ -164,6 +164,47 @@
         "Invalid UUID error is resolved"
       ],
       "subtasks": [],
+      "blocked_by": [],
+      "blocks": [],
+      "docs_updated": true
+    },
+    {
+      "id": "TASK-007",
+      "title": "Offline-CI reproduzieren und Testdaten reparieren",
+      "status": "blocked",
+      "priority": "high",
+      "category": "testing",
+      "created": "2026-11-15",
+      "updated": "2026-11-15",
+      "assigned_agent": "Codex",
+      "requires_review": true,
+      "reviewed_by": null,
+      "verified": false,
+      "description": "Diagnose gegen main f5023d1 und GitHub am 2026-11-15: keine Issues oder PRs, letzter CI-Lauf 21551467778; Logs HTTP 410, Annotationen nur exit 1. Aktuelle Fehler lokal unter Linux/Python 3.12.3 reproduziert, historische Ursache damit nicht bewiesen. Nur Testdaten und Offline-CI angepasst; kein Anwendungscode oder Risikoparameter geaendert.",
+      "acceptance_criteria": [
+        "CI verwendet keine Secrets, ignoriert manuelle/E2E-Skripte und sperrt Netzwerksockets.",
+        "Portfolio-Testdaten enthalten das bestehende Pflichtfeld last_equity.",
+        "Verbleibende Testschnittstellen und Risikofaelle sind geklaert; vollstaendiger Offline-Lauf ist gruen."
+      ],
+      "subtasks": [
+        {
+          "title": "Portfolio-Testdaten korrigieren",
+          "status": "completed",
+          "evidence": "31 passed im fokussierten Regressionstest; keine Setup-Fehler im Gesamtlauf."
+        },
+        {
+          "title": "CI auf Offline-Tests begrenzen",
+          "status": "completed",
+          "evidence": "pytest-socket mit --disable-socket --allow-unix-socket; keine Secrets mehr im Workflow."
+        },
+        {
+          "title": "Verbleibende Schnittstellen- und Risikofehler klaeren",
+          "status": "blocked",
+          "evidence": "17 failed, 100 passed: 10 MCP-Tests mit veralteter RateLimiter-/Cache-Schnittstelle; 4 nicht awaitete Risikofilter; 1 Signal-Test scheitert bereits an Modellvalidierung; 2 Groessenlimit-Tests (1050 > 1000 und Menge 1 bei Preis 500000). Risikologik braucht gesonderten Auftrag; Assertions bleiben unveraendert."
+        }
+      ],
+      "review_notes": "Linux/Python 3.12.3, Installation aus unveraenderten requirements.txt erfolgreich. Originalbefehl: 16 failed, 87 passed, 16 errors. Nach Testdatenfix: 17 failed, 102 passed. Offline-Auswahl: 17 failed, 100 passed. Regression: python -m pytest tests/test_models.py tests/test_mcp_clients.py::TestAlpacaMCPClient tests/test_mcp_clients.py::TestMCPClientIntegration --disable-socket --allow-unix-socket -q => 31 passed. Gesamt: python -m pytest tests/ --ignore=tests/test_integration.py --ignore=tests/test_adaptive_optimizer_e2e.py --ignore-glob=tests/test_*_manual.py --disable-socket --allow-unix-socket -v. Bestehender Schemafehler unveraendert: tasks/0/id FEAT-008 passt nicht zu TASK-Muster. Keine unabhaengige Abnahme; keine UEBERGABE-Datei vorhanden. Netzwerksperre separat geprueft: TCP blockiert und asyncio erlaubt, 2 passed. Ruff: 639 bestehende Meldungen, weiterhin nicht blockierend.",
+      "learning": "2026-11-15: Abgelaufene CI-Logs belegen keine Fehlerursache; aktuelle Reproduktion getrennt ausweisen.\nFehlende Pflichtfelder in Fixtures verdeckten weitere Testfehler.\nNetzwerksperren und ausdruecklicher E2E-Ausschluss machen die CI sicher offline.",
       "blocked_by": [],
       "blocks": [],
       "docs_updated": true

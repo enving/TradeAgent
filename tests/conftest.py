@@ -42,6 +42,7 @@ def sample_portfolio():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
 
@@ -57,6 +58,7 @@ def small_portfolio():
         cash=Decimal("500.00"),
         buying_power=Decimal("500.00"),
         equity=Decimal("500.00"),
+        last_equity=Decimal("500.00"),
     )
 
 
@@ -72,6 +74,7 @@ def large_portfolio():
         cash=Decimal("50000.00"),
         buying_power=Decimal("50000.00"),
         equity=Decimal("50000.00"),
+        last_equity=Decimal("50000.00"),
     )
 
 
@@ -365,6 +368,7 @@ async def mock_alpaca_client():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
     mock_client.get_positions.return_value = []

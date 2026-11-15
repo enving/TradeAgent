@@ -29,6 +29,7 @@ class TestPortfolioModel:
             cash=Decimal("5000.00"),
             buying_power=Decimal("5000.00"),
             equity=Decimal("5000.00"),
+            last_equity=Decimal("5000.00"),
         )
 
         assert portfolio.portfolio_value == Decimal("10000.00")
@@ -43,6 +44,7 @@ class TestPortfolioModel:
                 cash=Decimal("5000.00"),
                 buying_power=Decimal("5000.00"),
                 equity=Decimal("5000.00"),
+                last_equity=Decimal("5000.00"),
             )
 
     def test_portfolio_zero_values_valid(self):
@@ -52,6 +54,7 @@ class TestPortfolioModel:
             cash=Decimal("0.00"),
             buying_power=Decimal("0.00"),
             equity=Decimal("0.00"),
+            last_equity=Decimal("0.00"),
         )
 
         assert portfolio.portfolio_value == Decimal("0.00")

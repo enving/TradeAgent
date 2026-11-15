@@ -30,6 +30,7 @@ def sample_portfolio():
         cash=Decimal("5000.00"),
         buying_power=Decimal("5000.00"),
         equity=Decimal("5000.00"),
+        last_equity=Decimal("5000.00"),
     )
 
 
@@ -237,6 +238,7 @@ class TestCalculatePositionSize:
             cash=Decimal("500.00"),
             buying_power=Decimal("500.00"),  # Only $500 available
             equity=Decimal("9500.00"),
+            last_equity=Decimal("9500.00"),
         )
 
         qty = calculate_position_size(sample_signal, portfolio)
@@ -398,6 +400,7 @@ class TestValidateSignalRisk:
             cash=Decimal("10.00"),  # Only $10 available
             buying_power=Decimal("10.00"),
             equity=Decimal("9990.00"),
+            last_equity=Decimal("9990.00"),
         )
 
         signal = Signal(
